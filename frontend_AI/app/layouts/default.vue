@@ -43,6 +43,12 @@
           Case Explorer
         </NuxtLink>
 
+        <!-- Doctor Reviews -->
+        <NuxtLink to="/reviews" class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant" active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5">
+          <span class="material-symbols-outlined text-[20px]">star</span>
+          Doctor Reviews
+        </NuxtLink>
+
         <!-- Reports -->
         <a class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant cursor-not-allowed opacity-60" href="#">
           <span class="material-symbols-outlined text-[20px]">description</span>
