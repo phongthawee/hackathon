@@ -38,7 +38,7 @@ const emit = defineEmits(['select-city']);
 let mapInstance = null;
 let clusterGroup = null;
 
-// Map coordinates mapping for backup cases
+// Backup map coordinates when backend does not send coordinates
 const coordinateMap = {
   'Chiang Mai': { lat: 18.7883, lng: 98.9853, name: 'Chiang Mai Ram Hospital' },
   'Bangkok': { lat: 13.7563, lng: 100.5018, name: 'Bangkok General Hospital' },
@@ -64,9 +64,12 @@ function renderMarkers() {
     mapInstance.addLayer(clusterGroup);
   }
 
-  props.hotspots.forEach(spot => {
-    // Lookup coords
-    const mapping = coordinateMap[spot.city] || { lat: spot.lat, lng: spot.lng, name: `${spot.city} Clinic` };
+  props.hotspots.forEach((spot, index) => {
+    // Prefer coordinates delivered from backend, fallback to static map only if missing
+    const fallback = coordinateMap[spot.city] || { lat: 13.7563, lng: 100.5018, name: `${spot.city} Clinic` };
+    const markerLat = Number(spot.lat) || fallback.lat;
+    const markerLng = Number(spot.lng) || fallback.lng;
+    const facilityName = spot.hospitalName || spot.hospital || fallback.name;
     
     // Choose pin colors based on severity
     let colorClass = 'bg-secondary';
@@ -106,7 +109,7 @@ function renderMarkers() {
           <span class="w-2.5 h-2.5 rounded-full ${spot.severity === 'high' ? 'bg-error' : spot.severity === 'medium' ? 'bg-tertiary-fixed-dim' : 'bg-secondary'}"></span>
           <span class="font-label-caps text-[9px] font-bold text-outline uppercase">${spot.severity === 'high' ? 'เตือนภัยระดับวิกฤต' : 'ระดับปกติ/เฝ้าระวัง'}</span>
         </div>
-        <h4 class="font-bold text-sm text-primary mb-0.5">${mapping.name}</h4>
+        <h4 class="font-bold text-sm text-primary mb-0.5">${facilityName}</h4>
         <p class="text-[10px] text-on-surface-variant font-bold mb-2">จังหวัด: ${spot.city}</p>
         
         <div class="bg-surface-container-low p-2.5 rounded border border-outline-variant/30 text-[10px] leading-relaxed text-on-surface mb-3">
@@ -116,14 +119,14 @@ function renderMarkers() {
           </ul>
         </div>
         
-        <button id="btn-popup-${spot.city}" class="w-full text-center bg-primary text-on-primary py-1.5 px-3 rounded text-[10px] font-bold hover:opacity-90 block">
+        <button id="btn-popup-${spot.city}-${index}" class="w-full text-center bg-primary text-on-primary py-1.5 px-3 rounded text-[10px] font-bold hover:opacity-90 block">
           ดูรายละเอียดเพิ่มเติม
         </button>
       </div>
     `;
 
     // Create marker
-    const marker = L.marker([mapping.lat, mapping.lng], { icon: customIcon })
+    const marker = L.marker([markerLat, markerLng], { icon: customIcon })
       .bindPopup(popupHtml, { maxWidth: 280 });
 
     // Click handler to open the sidebar panel in parent component
@@ -132,7 +135,7 @@ function renderMarkers() {
       
       // Delay to ensure popup DOM renders, then register button click trigger
       setTimeout(() => {
-        const btn = document.getElementById(`btn-popup-${spot.city}`);
+        const btn = document.getElementById(`btn-popup-${spot.city}-${index}`);
         if (btn) {
           btn.addEventListener('click', () => {
             emit('select-city', spot);

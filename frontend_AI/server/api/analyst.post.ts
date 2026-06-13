@@ -1,4 +1,5 @@
 import { defineEventHandler, readBody } from 'h3';
+import { serverSupabaseClient } from '#supabase/server';
 import fs from 'fs';
 import path from 'path';
 
@@ -17,18 +18,36 @@ const hospitalToCity: Record<string, string> = {
 };
 
 export default defineEventHandler(async (event) => {
+  const supabase = await serverSupabaseClient(event);
   const body = await readBody(event);
   const userMessage = body?.message || 'ช่วยสรุปภาพรวมสถานการณ์โรคระบาดในเดือนนี้ให้หน่อย';
   const isAutoSummary = body?.isAutoSummary || false;
   const isSpreadsheetAnalysis = body?.isSpreadsheetAnalysis || false;
   const sheetData = body?.sheetData || '';
 
-  const dataDir = path.resolve(process.cwd(), 'server/data');
-
   try {
     // 1. Gather stats data to inject as context
-    const appointmentsRaw = JSON.parse(fs.readFileSync(path.join(dataDir, 'appointments.json'), 'utf-8'));
-    const doctors = JSON.parse(fs.readFileSync(path.join(dataDir, 'doctors.json'), 'utf-8'));
+    const { data: appointmentsRaw, error: appointmentsError } = await supabase
+      .from('appointments')
+      .select('doctor_id,symptom,status');
+
+    if (appointmentsError) {
+      throw appointmentsError;
+    }
+
+    const doctorIds = [...new Set((appointmentsRaw || []).map(a => a.doctor_id).filter(Boolean))] as string[];
+
+    let doctors: any[] = [];
+    if (doctorIds.length > 0) {
+      const { data, error } = await supabase
+        .from('doctors')
+        .select('doctor_id,hospital')
+        .in('doctor_id', doctorIds);
+      if (error) {
+        throw error;
+      }
+      doctors = data || [];
+    }
     
     const docMap = new Map();
     doctors.forEach((doc: any) => docMap.set(doc.doctor_id, doc));
@@ -65,7 +84,9 @@ export default defineEventHandler(async (event) => {
       })
       .join('\n');
 
-    const noShowRate = ((totalNoShows / appointmentsRaw.length) * 100).toFixed(1);
+    const noShowRate = appointmentsRaw?.length
+      ? ((totalNoShows / appointmentsRaw.length) * 100).toFixed(1)
+      : '0.0';
 
     // 2. Formulate context prompt for Gemini
     const statsContext = `
