@@ -123,25 +123,42 @@ ${activeOutbreakSummary}
       };
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: fullPrompt }]
-            }
-          ]
-        })
-      }
-    );
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-2.0-flash'];
+    let response: any = null;
+    let lastError: any = null;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API Error:', errText);
-      throw new Error(`Gemini API HTTP Error ${response.status}`);
+    for (const model of modelsToTry) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: fullPrompt }]
+                }
+              ]
+            })
+          }
+        );
+        if (res.ok) {
+          response = res;
+          break;
+        } else {
+          const errText = await res.text();
+          console.warn(`Failed to call Gemini model ${model}:`, errText);
+          lastError = new Error(`Gemini API HTTP Error ${res.status}: ${errText}`);
+        }
+      } catch (err: any) {
+        console.warn(`Error calling model ${model}:`, err);
+        lastError = err;
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error('All Gemini models failed to respond.');
     }
 
     const resData = await response.json();
