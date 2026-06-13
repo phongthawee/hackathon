@@ -54,16 +54,6 @@
     ]
   },
   {
-    "review_id": "rev-1006",
-    "user_id": "u010",
-    "target_id": "p-106",
-    "target_type": "PRODUCT",
-    "rating": 4,
-    "comment": "Exactly what I was looking for.",
-    "timestamp": "2025-07-31T13:21:00Z",
-    "images": []
-  },
-  {
     "review_id": "rev-1007",
     "user_id": "u007",
     "target_id": "doc-24",
@@ -84,16 +74,6 @@
     "images": []
   },
   {
-    "review_id": "rev-1009",
-    "user_id": "u001",
-    "target_id": "p-115",
-    "target_type": "PRODUCT",
-    "rating": 4,
-    "comment": "Exactly what I was looking for.",
-    "timestamp": "2026-01-03T18:21:00Z",
-    "images": []
-  },
-  {
     "review_id": "rev-1010",
     "user_id": "u002",
     "target_id": "h-002",
@@ -101,16 +81,6 @@
     "rating": 2,
     "comment": "AC was not working.",
     "timestamp": "2025-04-19T11:58:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1011",
-    "user_id": "u008",
-    "target_id": "p-104",
-    "target_type": "PRODUCT",
-    "rating": 3,
-    "comment": "Did not match the description.",
-    "timestamp": "2026-01-18T00:07:00Z",
     "images": []
   },
   {
@@ -122,18 +92,6 @@
     "comment": "Highly skilled and knowledgeable.",
     "timestamp": "2025-06-05T02:18:00Z",
     "images": []
-  },
-  {
-    "review_id": "rev-1013",
-    "user_id": "u008",
-    "target_id": "p-138",
-    "target_type": "PRODUCT",
-    "rating": 1,
-    "comment": "Stopped working after a week.",
-    "timestamp": "2025-04-17T18:22:00Z",
-    "images": [
-      "https://placehold.co/200x200?text=Review13"
-    ]
   },
   {
     "review_id": "rev-1014",
@@ -153,16 +111,6 @@
     "rating": 4,
     "comment": "Helped me recover quickly.",
     "timestamp": "2025-02-16T14:46:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1016",
-    "user_id": "u002",
-    "target_id": "p-110",
-    "target_type": "PRODUCT",
-    "rating": 3,
-    "comment": "Not worth the price.",
-    "timestamp": "2025-08-24T01:55:00Z",
     "images": []
   },
   {
@@ -196,26 +144,6 @@
     "images": []
   },
   {
-    "review_id": "rev-1020",
-    "user_id": "u012",
-    "target_id": "p-113",
-    "target_type": "PRODUCT",
-    "rating": 4,
-    "comment": "Great quality, highly recommended!",
-    "timestamp": "2025-06-11T08:36:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1021",
-    "user_id": "u010",
-    "target_id": "p-133",
-    "target_type": "PRODUCT",
-    "rating": 4,
-    "comment": "Fast shipping and good packaging.",
-    "timestamp": "2025-02-26T23:06:00Z",
-    "images": []
-  },
-  {
     "review_id": "rev-1022",
     "user_id": "u003",
     "target_id": "doc-10",
@@ -233,58 +161,6 @@
     "rating": 4,
     "comment": "Helped me recover quickly.",
     "timestamp": "2025-12-03T03:47:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1024",
-    "user_id": "u009",
-    "target_id": "p-127",
-    "target_type": "PRODUCT",
-    "rating": 4,
-    "comment": "Fast shipping and good packaging.",
-    "timestamp": "2025-11-10T00:14:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1025",
-    "user_id": "u011",
-    "target_id": "p-139",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Great quality, highly recommended!",
-    "timestamp": "2025-02-08T15:08:00Z",
-    "images": [
-      "https://placehold.co/200x200?text=Review25"
-    ]
-  },
-  {
-    "review_id": "rev-1026",
-    "user_id": "u002",
-    "target_id": "p-114",
-    "target_type": "PRODUCT",
-    "rating": 2,
-    "comment": "Stopped working after a week.",
-    "timestamp": "2025-11-05T11:28:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1027",
-    "user_id": "u009",
-    "target_id": "p-138",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Fast shipping and good packaging.",
-    "timestamp": "2025-01-14T09:56:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1028",
-    "user_id": "u012",
-    "target_id": "p-133",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Fast shipping and good packaging.",
-    "timestamp": "2025-11-06T08:17:00Z",
     "images": []
   },
   {
@@ -307,16 +183,6 @@
     "rating": 2,
     "comment": "AC was not working.",
     "timestamp": "2026-01-09T17:03:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1031",
-    "user_id": "u013",
-    "target_id": "p-131",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Love the design and build quality.",
-    "timestamp": "2025-02-02T10:33:00Z",
     "images": []
   },
   {
@@ -352,16 +218,6 @@
     "images": []
   },
   {
-    "review_id": "rev-1035",
-    "user_id": "u005",
-    "target_id": "p-113",
-    "target_type": "PRODUCT",
-    "rating": 4,
-    "comment": "Love the design and build quality.",
-    "timestamp": "2025-03-20T06:03:00Z",
-    "images": []
-  },
-  {
     "review_id": "rev-1036",
     "user_id": "u010",
     "target_id": "h-027",
@@ -369,16 +225,6 @@
     "rating": 5,
     "comment": "Amazing view and friendly staff.",
     "timestamp": "2026-01-05T23:55:00Z",
-    "images": []
-  },
-  {
-    "review_id": "rev-1037",
-    "user_id": "u010",
-    "target_id": "p-132",
-    "target_type": "PRODUCT",
-    "rating": 1,
-    "comment": "Stopped working after a week.",
-    "timestamp": "2025-05-03T18:11:00Z",
     "images": []
   },
   {
@@ -414,28 +260,6 @@
     "images": []
   },
   {
-    "review_id": "rev-1041",
-    "user_id": "u006",
-    "target_id": "p-144",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Works perfectly.",
-    "timestamp": "2026-01-15T01:01:00Z",
-    "images": [
-      "https://placehold.co/200x200?text=Review41"
-    ]
-  },
-  {
-    "review_id": "rev-1042",
-    "user_id": "u015",
-    "target_id": "p-137",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Works perfectly.",
-    "timestamp": "2025-08-26T15:56:00Z",
-    "images": []
-  },
-  {
     "review_id": "rev-1043",
     "user_id": "u004",
     "target_id": "doc-30",
@@ -454,18 +278,6 @@
     "comment": "Wait time was short.",
     "timestamp": "2025-01-14T06:27:00Z",
     "images": []
-  },
-  {
-    "review_id": "rev-1045",
-    "user_id": "u015",
-    "target_id": "p-112",
-    "target_type": "PRODUCT",
-    "rating": 5,
-    "comment": "Fast shipping and good packaging.",
-    "timestamp": "2025-06-06T11:15:00Z",
-    "images": [
-      "https://placehold.co/200x200?text=Review45"
-    ]
   },
   {
     "review_id": "rev-1046",
@@ -498,16 +310,6 @@
     "images": [
       "https://placehold.co/200x200?text=Review48"
     ]
-  },
-  {
-    "review_id": "rev-1049",
-    "user_id": "u004",
-    "target_id": "p-147",
-    "target_type": "PRODUCT",
-    "rating": 2,
-    "comment": "Shipping took too long.",
-    "timestamp": "2025-05-16T09:06:00Z",
-    "images": []
   },
   {
     "review_id": "rev-1050",
