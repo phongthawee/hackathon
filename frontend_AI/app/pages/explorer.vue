@@ -1,117 +1,122 @@
 <template>
-  <div class="explorer-page">
-    <header class="explorer-header">
+  <div class="flex flex-col gap-lg">
+    <!-- Header Row -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xs">
       <div>
-        <h1 class="page-title">Case Explorer</h1>
-        <p class="page-subtitle">ค้นหา ตรวจสอบ และคัดกรองประวัตินัดตรวจสุขภาพระดับภูมิภาคเชิงลึก</p>
+        <h2 class="font-headline-md text-headline-md text-primary mb-xs">รายการเคสระบาดวิทยา</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          แสดงรายการเคสที่กำลังเฝ้าระวัง <span class="font-bold text-on-surface">{{ totalCases }}</span> รายการในภูมิภาคของคุณ
+        </p>
       </div>
-    </header>
-
-    <!-- Filters Section -->
-    <div class="filters-panel glass-panel">
-      <div class="filter-row-top">
-        <!-- Text Search -->
-        <div class="filter-group search-box">
-          <label>ค้นหาประวัติ</label>
-          <div class="input-wrapper">
-            <input 
-              v-model="filters.search" 
-              type="text" 
-              placeholder="ค้นหา ID, ชื่อผู้ป่วย, อาการ หรือแพทย์..." 
-              @input="debounceQuery" />
-            <span v-if="filters.search" class="clear-btn" @click="clearSearch">×</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="filter-row-bottom">
-        <!-- City Select -->
-        <div class="filter-group">
-          <label>จังหวัด</label>
-          <select v-model="filters.city" @change="applyFilters">
-            <option value="">ทั้งหมด</option>
-            <option value="Bangkok">กรุงเทพฯ</option>
-            <option value="Chiang Mai">เชียงใหม่</option>
-            <option value="Phuket">ภูเก็ต</option>
-            <option value="Khon Kaen">ขอนแก่น</option>
-            <option value="Chon Buri">ชลบุรี</option>
-          </select>
-        </div>
-
-        <!-- Symptom Select -->
-        <div class="filter-group">
-          <label>กลุ่มอาการ</label>
-          <select v-model="filters.symptom" @change="applyFilters">
-            <option value="">ทั้งหมด</option>
-            <option v-for="sym in symptomOptions" :key="sym" :value="sym">{{ sym }}</option>
-          </select>
-        </div>
-
-        <!-- Status Select -->
-        <div class="filter-group">
-          <label>สถานะนัดตรวจ</label>
-          <select v-model="filters.status" @change="applyFilters">
-            <option value="">ทั้งหมด</option>
-            <option value="COMPLETED">COMPLETED (รักษาแล้ว)</option>
-            <option value="CONFIRMED">CONFIRMED (ยืนยันแล้ว)</option>
-            <option value="PENDING">PENDING (รอดำเนินการ)</option>
-            <option value="CANCELLED">CANCELLED (ยกเลิก)</option>
-            <option value="NO_SHOW">NO_SHOW (เบี้ยวนัด)</option>
-          </select>
-        </div>
-
-        <!-- Department Select -->
-        <div class="filter-group">
-          <label>แผนกการรักษา</label>
-          <select v-model="filters.department" @change="applyFilters">
-            <option value="">ทั้งหมด</option>
-            <option v-for="dept in deptOptions" :key="dept" :value="dept">{{ dept }}</option>
-          </select>
-        </div>
+      <div class="flex items-center gap-md">
+        <!-- Export to CSV button (F3 Extra) -->
+        <button @click="exportToCSV" class="flex items-center gap-sm px-md py-sm bg-surface-container-lowest border border-surface-variant rounded-lg text-on-surface font-label-caps text-label-caps hover:bg-surface-container-low transition-colors shadow-sm text-xs font-bold">
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          ส่งออก CSV
+        </button>
       </div>
     </div>
 
-    <!-- Data Table Section -->
-    <div class="table-panel glass-panel">
-      <div v-if="loading" class="table-loading">
-        <p class="loading-pulse">🔄 กำลังโหลดข้อมูลประวัติเคส...</p>
+    <!-- Advanced Filter Bento Bar -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-variant p-md flex flex-wrap items-center gap-md">
+      <!-- Text Search -->
+      <div class="flex-1 min-w-[200px] relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+        <input 
+          v-model="filters.search" 
+          @input="debounceQuery" 
+          class="w-full bg-background border border-surface-variant rounded-lg py-sm pl-10 pr-sm font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-all text-xs" 
+          placeholder="ค้นหา ID, ชื่อหมอ, อาการ..." 
+          type="text"/>
+      </div>
+      
+      <!-- Select filters -->
+      <div class="flex items-center gap-sm overflow-x-auto pb-1 md:pb-0">
+        <!-- Status -->
+        <select v-model="filters.status" @change="applyFilters" class="bg-background border border-surface-variant rounded-lg py-sm px-md font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary cursor-pointer text-xs">
+          <option value="">สถานะ: ทั้งหมด</option>
+          <option value="CONFIRMED">Confirmed (ยืนยันแล้ว)</option>
+          <option value="PENDING">Pending (รอดำเนินการ)</option>
+          <option value="COMPLETED">Completed (รักษาเสร็จแล้ว)</option>
+          <option value="CANCELLED">Cancelled (ยกเลิก)</option>
+          <option value="NO_SHOW">No-Show (เบี้ยวนัด)</option>
+        </select>
+        
+        <!-- Region/Location -->
+        <select v-model="filters.city" @change="applyFilters" class="bg-background border border-surface-variant rounded-lg py-sm px-md font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary cursor-pointer text-xs">
+          <option value="">สถานที่: ทุกภูมิภาค</option>
+          <option value="Bangkok">กรุงเทพฯ</option>
+          <option value="Chiang Mai">เชียงใหม่</option>
+          <option value="Phuket">ภูเก็ต</option>
+          <option value="Khon Kaen">ขอนแก่น</option>
+          <option value="Chon Buri">ชลบุรี</option>
+        </select>
+        
+        <!-- Department -->
+        <select v-model="filters.department" @change="applyFilters" class="bg-background border border-surface-variant rounded-lg py-sm px-md font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary cursor-pointer text-xs">
+          <option value="">แผนกการรักษา: ทั้งหมด</option>
+          <option v-for="dept in deptOptions" :key="dept" :value="dept">{{ dept }}</option>
+        </select>
+        
+        <button @click="resetFilters" class="flex items-center gap-xs text-primary font-label-caps text-label-caps px-sm py-sm hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap text-xs font-bold">
+          <span class="material-symbols-outlined text-[18px]">tune</span> ล้างตัวกรอง
+        </button>
+      </div>
+    </div>
+
+    <!-- Data Table Container -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-variant overflow-hidden flex-1 flex flex-col min-h-[460px]">
+      <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-xl">
+        <p class="animate-pulse text-sm text-outline">🔄 กำลังเรียกค้นข้อมูลเคสจากฐานข้อมูลประชากร...</p>
       </div>
 
-      <div v-else-if="!cases.length" class="empty-state">
-        <p>ไม่พบประวัติข้อมูลนัดตรวจตรวจที่ตรงกับเงื่อนไข</p>
-        <button class="reset-btn" @click="resetFilters">ล้างตัวกรองทั้งหมด</button>
+      <div v-else-if="!cases.length" class="flex-1 flex flex-col items-center justify-center p-xl text-outline text-xs">
+        <p class="mb-sm">ไม่พบรายการนัดตรวจตามเงื่อนไขตัวกรองปัจจุบัน</p>
+        <button @click="resetFilters" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold">ล้างตัวกรองทั้งหมด</button>
       </div>
 
-      <div v-else class="table-responsive">
-        <table class="cases-table">
+      <div v-else class="overflow-x-auto flex-1">
+        <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr>
-              <th>ID เคส</th>
-              <th>วันที่รับบริการ</th>
-              <th>ชื่อคนไข้</th>
-              <th>กลุ่มอาการ</th>
-              <th>แพทย์ผู้ตรวจ</th>
-              <th>โรงพยาบาล (จังหวัด)</th>
-              <th>สถานะ</th>
+            <tr class="bg-surface-container border-b border-surface-variant">
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">รหัสเคส</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">คนไข้</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">อาการหลัก</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">แพทย์</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">สถานที่ (จังหวัด)</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">สถานะ</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap">วันที่ / เวลา</th>
+              <th class="py-sm px-md font-label-caps text-label-caps text-on-surface-variant whitespace-nowrap text-right">ดำเนินการ</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-surface-variant">
             <tr 
               v-for="item in cases" 
               :key="item.apt_id" 
-              class="table-row" 
-              :class="{ 'row-active': selectedCase?.apt_id === item.apt_id }"
+              class="hover:bg-surface transition-colors group cursor-pointer"
               @click="openCaseDetail(item)">
-              <td class="case-id">{{ item.apt_id }}</td>
-              <td>{{ formatDate(item.date) }}</td>
-              <td class="bold">{{ item.patient_name }}</td>
-              <td class="symptom-tag">{{ item.symptom }}</td>
-              <td>{{ item.doctor_name }}</td>
-              <td>{{ item.hospital }} <span class="city-sub">({{ item.city }})</span></td>
-              <td>
-                <span class="status-badge" :class="'badge-' + item.status">
-                  {{ item.status }}
+              <td class="py-md px-md font-data-mono text-data-mono text-primary font-medium">#{{ item.apt_id }}</td>
+              <td class="py-md px-md font-body-md text-body-md text-on-surface font-medium flex items-center gap-sm">
+                <div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center text-[10px] font-bold text-on-surface-variant">
+                  {{ getInitials(item.patient_name) }}
+                </div>
+                {{ item.patient_name }}
+              </td>
+              <td class="py-md px-md font-body-md text-body-md text-on-surface-variant">{{ item.symptom }}</td>
+              <td class="py-md px-md font-body-md text-body-md text-on-surface">{{ item.doctor_name }}</td>
+              <td class="py-md px-md font-body-md text-body-md text-on-surface-variant">
+                {{ item.hospital }} <span class="text-outline">({{ getThaiCityName(item.city) }})</span>
+              </td>
+              <td class="py-md px-md">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-caps text-[10px] font-bold" :class="getStatusBadgeClass(item.status)">
+                  {{ getThaiStatusText(item.status) }}
                 </span>
+              </td>
+              <td class="py-md px-md font-body-md text-body-md text-on-surface-variant">{{ formatDate(item.date) }}</td>
+              <td class="py-md px-md text-right">
+                <button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-surface-container-high" title="View Detail">
+                  <span class="material-symbols-outlined text-[20px]">visibility</span>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -119,17 +124,17 @@
       </div>
 
       <!-- Pagination bar -->
-      <div v-if="totalPages > 1" class="pagination-bar">
+      <div v-if="totalPages > 1" class="flex justify-between items-center p-md border-t border-surface-variant text-xs">
         <button 
           :disabled="page === 1" 
-          class="pag-btn" 
+          class="bg-surface-container-lowest border border-surface-variant rounded-lg px-3 py-1.5 font-bold hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed" 
           @click="changePage(page - 1)">
           ◀ ก่อนหน้า
         </button>
-        <span class="pag-info">หน้า {{ page }} จาก {{ totalPages }} (ทั้งหมด {{ totalCases }} เคส)</span>
+        <span class="text-on-surface-variant">หน้า {{ page }} จาก {{ totalPages }} (ทั้งหมด {{ totalCases }} รายการ)</span>
         <button 
           :disabled="page === totalPages" 
-          class="pag-btn" 
+          class="bg-surface-container-lowest border border-surface-variant rounded-lg px-3 py-1.5 font-bold hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed" 
           @click="changePage(page + 1)">
           ถัดไป ▶
         </button>
@@ -137,81 +142,78 @@
     </div>
 
     <!-- Sliding Case Detail Drawer (F4) -->
-    <div class="drawer-overlay" v-if="selectedCase" @click.self="closeDrawer">
-      <div class="detail-drawer glass-panel" :class="{ 'drawer-open': selectedCase }">
-        <div class="drawer-header">
+    <div class="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity duration-300" v-if="selectedCase" @click.self="closeDrawer">
+      <div class="w-[450px] h-screen bg-surface-container-lowest shadow-2xl border-l border-surface-variant flex flex-col animate-slide-in">
+        <!-- Drawer Header -->
+        <div class="p-lg border-b border-surface-variant flex justify-between items-center bg-surface-container-low">
           <div>
-            <span class="drawer-tag">CASE DOSSIER</span>
-            <h3>รายละเอียดเคส: {{ selectedCase.apt_id }}</h3>
+            <span class="text-[10px] font-bold text-secondary tracking-widest block mb-0.5">CASE DOSSIER</span>
+            <h3 class="font-headline-sm text-base text-primary font-bold">รายละเอียดเคส: {{ selectedCase.apt_id }}</h3>
           </div>
-          <button class="drawer-close" @click="closeDrawer">×</button>
+          <button class="text-on-surface-variant hover:text-on-surface text-2xl font-bold" @click="closeDrawer">×</button>
         </div>
 
-        <div class="drawer-body" v-if="selectedCase">
-          <!-- Patient Segment -->
-          <div class="drawer-section">
-            <h4>👤 ข้อมูลผู้รับบริการ</h4>
-            <div class="drawer-grid">
-              <div class="grid-cell"><span class="lbl">ชื่อ-สกุล:</span><span class="val bold">{{ selectedCase.patient_name }}</span></div>
-              <div class="grid-cell"><span class="lbl">รหัสผู้ป่วย:</span><span class="val">{{ selectedCase.user_id }}</span></div>
-              <div class="grid-cell"><span class="lbl">อีเมลติดต่อ:</span><span class="val">{{ selectedCase.patient_email }}</span></div>
-              <div class="grid-cell"><span class="lbl">เบอร์โทรศัพท์:</span><span class="val">{{ selectedCase.patient_phone }}</span></div>
+        <!-- Drawer Body -->
+        <div class="p-lg overflow-y-auto flex-grow flex flex-col gap-lg text-xs">
+          <!-- Section: Patient details -->
+          <div>
+            <h4 class="font-headline-sm text-xs font-bold text-on-surface border-l-4 border-secondary pl-sm mb-md">👤 ข้อมูลผู้รับบริการ</h4>
+            <div class="bg-surface border border-surface-variant p-md rounded-lg flex flex-col gap-sm">
+              <div class="flex justify-between"><span class="text-on-surface-variant">ชื่อผู้ป่วย:</span><span class="font-bold text-on-surface">{{ selectedCase.patient_name }}</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">รหัสผู้ใช้:</span><span>{{ selectedCase.user_id }}</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">อีเมลติดต่อ:</span><span>{{ selectedCase.patient_email }}</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">เบอร์โทรศัพท์:</span><span>{{ selectedCase.patient_phone }}</span></div>
             </div>
           </div>
 
-          <!-- Clinical Segment -->
-          <div class="drawer-section">
-            <h4>🏥 การวินิจฉัยและแพทย์ผู้รักษา</h4>
-            <div class="drawer-grid">
-              <div class="grid-cell"><span class="lbl">แพทย์ผู้รักษา:</span><span class="val bold">{{ selectedCase.doctor_name }}</span></div>
-              <div class="grid-cell"><span class="lbl">แผนกแพทย์:</span><span class="val">{{ selectedCase.department }}</span></div>
-              <div class="grid-cell"><span class="lbl">พิกัดโรงพยาบาล:</span><span class="val">{{ selectedCase.hospital }} ({{ selectedCase.city }})</span></div>
-              <div class="grid-cell"><span class="lbl">รหัสแพทย์:</span><span class="val">{{ selectedCase.doctor_id }}</span></div>
+          <!-- Section: Doctor & Hospital details -->
+          <div>
+            <h4 class="font-headline-sm text-xs font-bold text-on-surface border-l-4 border-secondary pl-sm mb-md">🏥 การรักษาและแพทย์ผู้ตรวจ</h4>
+            <div class="bg-surface border border-surface-variant p-md rounded-lg flex flex-col gap-sm">
+              <div class="flex justify-between"><span class="text-on-surface-variant">แพทย์ผู้รับตรวจ:</span><span class="font-bold text-on-surface">{{ selectedCase.doctor_name }}</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">แผนกการรักษา:</span><span>{{ selectedCase.department }}</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">พิกัดโรงพยาบาล:</span><span>{{ selectedCase.hospital }} ({{ getThaiCityName(selectedCase.city) }})</span></div>
+              <div class="flex justify-between"><span class="text-on-surface-variant">รหัสหมอ:</span><span>{{ selectedCase.doctor_id }}</span></div>
             </div>
           </div>
 
-          <!-- Outbreak Symptom details -->
-          <div class="drawer-section">
-            <h4>🩺 รายงานอาการสำคัญ</h4>
-            <div class="symptom-box">
-              <span class="symptom-indicator"></span>
+          <!-- Section: Outbreak Symptoms report -->
+          <div>
+            <h4 class="font-headline-sm text-xs font-bold text-on-surface border-l-4 border-secondary pl-sm mb-md">🩺 รายงานอาการสำคัญ</h4>
+            <div class="bg-error-container/30 border border-error/20 p-md rounded-lg flex gap-md items-start">
+              <span class="material-symbols-outlined text-error text-[20px] mt-0.5">coronavirus</span>
               <div>
-                <p class="symptom-title">{{ selectedCase.symptom }}</p>
-                <p class="symptom-desc">ส่งตรวจผ่านระบบระบาดวิทยาเพื่อตรวจจับความผิดปกติของโรคติดต่อ</p>
+                <p class="font-bold text-error text-xs">{{ selectedCase.symptom }}</p>
+                <p class="text-[10px] text-on-surface-variant mt-1">ได้รับการเฝ้าระวังภัยพิบัติทางสาธารณสุขเนื่องจากอยู่ในเกณฑ์โรคระบาดทางเดินหายใจ</p>
               </div>
             </div>
           </div>
 
-          <!-- Timeline status track -->
-          <div class="drawer-section">
-            <h4>⏳ ไทม์ไลน์สถานะการเข้ารับบริการ</h4>
-            <div class="timeline">
-              <div class="timeline-item done">
-                <div class="t-line"></div>
-                <div class="t-dot"></div>
-                <div class="t-content">
-                  <p class="t-title">สร้างนัดหมายสำเร็จ (PENDING)</p>
-                  <p class="t-time">ประเมินอาการเบื้องต้นผ่านระบบ</p>
-                </div>
-              </div>
-              
-              <div class="timeline-item" :class="{ done: selectedCase.status !== 'PENDING' && selectedCase.status !== 'CANCELLED' }">
-                <div class="t-line"></div>
-                <div class="t-dot"></div>
-                <div class="t-content">
-                  <p class="t-title">ยืนยันเวลานัดตรวจ (CONFIRMED)</p>
-                  <p class="t-time">จัดสรรแพทย์ผู้รักษาล่วงหน้า</p>
-                </div>
+          <!-- Section: Timeline tracker -->
+          <div>
+            <h4 class="font-headline-sm text-xs font-bold text-on-surface border-l-4 border-secondary pl-sm mb-md">⏳ ไทม์ไลน์สถานะประวัติการรักษา</h4>
+            <div class="relative pl-md border-l-2 border-surface-variant ml-sm flex flex-col gap-lg">
+              <!-- Step 1 -->
+              <div class="relative">
+                <span class="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                <p class="font-bold text-on-surface">สร้างนัดหมายสำเร็จ (PENDING)</p>
+                <p class="text-[10px] text-on-surface-variant">จองคิวนัดตรวจล่วงหน้าในระบบ Health Radar</p>
               </div>
 
-              <div class="timeline-item last" :class="selectedCase.status.toLowerCase()">
-                <div class="t-dot"></div>
-                <div class="t-content">
-                  <p class="t-title">บทสรุปบริการ: {{ selectedCase.status }}</p>
-                  <p class="t-time">
-                    {{ getStatusTimelineDesc(selectedCase.status) }}
-                  </p>
-                </div>
+              <!-- Step 2 -->
+              <div class="relative">
+                <span class="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full" :class="selectedCase.status !== 'PENDING' && selectedCase.status !== 'CANCELLED' ? 'bg-secondary' : 'bg-outline-variant'"></span>
+                <p class="font-bold text-on-surface">ยืนยันวันรับตรวจ (CONFIRMED)</p>
+                <p class="text-[10px] text-on-surface-variant">จัดสรรห้องวิเคราะห์แล็บและข้อมูลบุคลากรแพทย์</p>
+              </div>
+
+              <!-- Step 3 (Outcome status) -->
+              <div class="relative">
+                <span class="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full" :class="getTimelineOutcomeColor(selectedCase.status)"></span>
+                <p class="font-bold text-on-surface">บทสรุปบริการ: {{ selectedCase.status }}</p>
+                <p class="text-[10px] text-on-surface-variant">
+                  {{ getStatusTimelineDesc(selectedCase.status) }}
+                </p>
               </div>
             </div>
           </div>
@@ -235,14 +237,6 @@ const totalPages = ref(1);
 const loading = ref(true);
 const selectedCase = ref(null);
 
-// Dropdown lists filters
-const symptomOptions = [
-  'Flu symptoms', 'Sore throat', 'Diarrhea', 'Food Poisoning', 
-  'Dengue Fever', 'Covid-19', 'Allergy', 'Headache', 'Back pain', 
-  'Toothache', 'Stomach ache', 'Pregnancy checkup', 'Vaccination', 
-  'Annual Checkup', 'Dizziness', 'Skin rash'
-];
-
 const deptOptions = [
   'Psychiatry', 'Dermatology', 'Gynecology', 'Cardiology', 
   'Pediatrics', 'Urology', 'Neurology', 'Oncology', 'Orthopedics'
@@ -252,12 +246,11 @@ const deptOptions = [
 const filters = reactive({
   search: '',
   city: '',
-  symptom: '',
   status: '',
   department: ''
 });
 
-// Debounce state for search input
+// Debounce helper
 let debounceTimeout = null;
 function debounceQuery() {
   clearTimeout(debounceTimeout);
@@ -267,21 +260,59 @@ function debounceQuery() {
   }, 300);
 }
 
-function clearSearch() {
-  filters.search = '';
-  applyFilters();
+// Translate helpers
+function getInitials(name) {
+  if (!name) return 'JD';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
 }
 
-// Format timeline description
+function getThaiCityName(city) {
+  const map = {
+    'Bangkok': 'กรุงเทพฯ',
+    'Chiang Mai': 'เชียงใหม่',
+    'Phuket': 'ภูเก็ต',
+    'Khon Kaen': 'ขอนแก่น',
+    'Chon Buri': 'ชลบุรี'
+  };
+  return map[city] || city;
+}
+
+function getThaiStatusText(status) {
+  const map = {
+    'COMPLETED': 'เสร็จสิ้น',
+    'CONFIRMED': 'ยืนยันแล้ว',
+    'PENDING': 'รอดำเนินการ',
+    'CANCELLED': 'ยกเลิก',
+    'NO_SHOW': 'เบี้ยวนัด'
+  };
+  return map[status] || status;
+}
+
+function getStatusBadgeClass(status) {
+  if (status === 'COMPLETED') return 'bg-secondary-container text-on-secondary-container';
+  if (status === 'CONFIRMED') return 'bg-primary-fixed text-on-primary-fixed-variant';
+  if (status === 'PENDING') return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
+  if (status === 'CANCELLED') return 'bg-surface-variant text-on-surface-variant';
+  return 'bg-error-container text-on-error-container'; // NO_SHOW
+}
+
+function getTimelineOutcomeColor(status) {
+  if (status === 'COMPLETED') return 'bg-secondary';
+  if (status === 'NO_SHOW') return 'bg-error';
+  if (status === 'CANCELLED') return 'bg-outline';
+  if (status === 'CONFIRMED') return 'bg-secondary';
+  return 'bg-tertiary-fixed-dim'; // PENDING
+}
+
 function getStatusTimelineDesc(status) {
-  if (status === 'COMPLETED') return 'แพทย์ตรวจรักษาเสร็จสมบูรณ์ ปิดประวัติเวชระเบียนเรียบร้อย';
-  if (status === 'NO_SHOW') return 'ผู้ป่วยไม่เข้าพบแพทย์ตามเวลานัด เสียอัตราโควต้าสาธารณสุข';
-  if (status === 'CANCELLED') return 'ผู้ป่วยขอยกเลิกนัดล่วงหน้าเนื่องจากไม่สะดวกเข้าพบ';
-  if (status === 'CONFIRMED') return 'อยู่ระหว่างจัดเตรียมบุคลากรการรักษา';
-  return 'รอเจ้าหน้าที่ทำความสะอาดยืนยันการลงทะเบียน';
+  if (status === 'COMPLETED') return 'แพทย์ตรวจรักษาเสร็จสมบูรณ์ ปิดประวัติเวชระเบียนเสร็จสิ้น';
+  if (status === 'NO_SHOW') return 'คนไข้ไม่เข้าพบแพทย์ตามเวลานัด ส่งผลต่อทรัพยากรคลินิก';
+  if (status === 'CANCELLED') return 'คนไข้แจ้งขอยกเลิกเวลานัดล่วงหน้า';
+  if (status === 'CONFIRMED') return 'ยืนยันตารางคิวตรวจ ดำเนินการรักษาในเร็วๆ นี้';
+  return 'รอขั้นตอนคัดกรองเบื้องต้นลงฐานข้อมูลระบบ';
 }
 
-// API fetch query runner
+// Fetch lists
 async function applyFilters() {
   loading.value = true;
   try {
@@ -291,7 +322,6 @@ async function applyFilters() {
         limit: 12,
         search: filters.search,
         city: filters.city,
-        symptom: filters.symptom,
         status: filters.status,
         department: filters.department
       }
@@ -326,11 +356,42 @@ function closeDrawer() {
 function resetFilters() {
   filters.search = '';
   filters.city = '';
-  filters.symptom = '';
   filters.status = '';
   filters.department = '';
   page.value = 1;
   applyFilters();
+}
+
+// Export data directly to CSV downloads (F3 Extra)
+function exportToCSV() {
+  if (!cases.value.length) return;
+
+  const headers = ['รหัสเคส', 'ชื่อคนไข้', 'อาการหลัก', 'แพทย์ผู้รักษา', 'โรงพยาบาล', 'จังหวัด', 'สถานะ', 'วันที่/เวลา'];
+  const rows = cases.value.map(item => [
+    `#${item.apt_id}`,
+    item.patient_name,
+    item.symptom,
+    item.doctor_name,
+    item.hospital,
+    getThaiCityName(item.city),
+    item.status,
+    formatDate(item.date)
+  ]);
+
+  const csvContent = "\uFEFF" + [
+    headers.join(','),
+    ...rows.map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
+
+  // Trigger file download in browser
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `health_radar_export_${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function formatDate(isoStr) {
@@ -346,441 +407,24 @@ function formatDate(isoStr) {
 }
 
 onMounted(() => {
-  // Read incoming query parameter from Outbreak Map redirection (if any)
+  // Catch incoming redirect parameter filters from Outbreak Map or Search redirects
   if (route.query.city) {
     filters.city = route.query.city;
+  }
+  if (route.query.search) {
+    filters.search = route.query.search;
   }
   applyFilters();
 });
 </script>
 
 <style scoped>
-.explorer-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.explorer-header {
-  margin-bottom: 8px;
-}
-
-.page-title {
-  font-family: var(--font-title);
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  background: linear-gradient(to right, #ffffff, #9ca3af);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.page-subtitle {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-
-/* Filters Panel */
-.filters-panel {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.filter-row-top {
-  width: 100%;
-}
-
-.filter-row-bottom {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.filter-group label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.filter-group input, .filter-group select {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-glow);
-  color: var(--text-primary);
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  width: 100%;
-}
-
-.filter-group input:focus, .filter-group select:focus {
-  outline: none;
-  border-color: var(--color-blue);
-  box-shadow: 0 0 8px rgba(6, 182, 212, 0.2);
-}
-
-.clear-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-/* Data Table Grid */
-.table-panel {
-  padding: 24px;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.table-loading, .empty-state {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.reset-btn {
-  margin-top: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-glow);
-  color: var(--text-primary);
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.reset-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.table-responsive {
-  overflow-x: auto;
-  margin-bottom: 20px;
-}
-
-.cases-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.8rem;
-}
-
-.cases-table th {
-  padding: 12px 16px;
-  font-family: var(--font-title);
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-glow);
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
-}
-
-.cases-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-}
-
-.table-row {
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.table-row:hover, .table-row.row-active {
-  background-color: rgba(255, 255, 255, 0.02);
-}
-
-.case-id {
-  font-family: var(--font-title);
-  font-weight: bold;
-  color: var(--color-blue);
-}
-
-.bold {
-  font-weight: 700;
-}
-
-.symptom-tag {
-  color: var(--color-yellow);
-  font-weight: 500;
-}
-
-.city-sub {
-  color: var(--text-muted);
-}
-
-/* Status Badges */
-.status-badge {
-  display: inline-flex;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-}
-
-.badge-COMPLETED { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--color-green); }
-.badge-CONFIRMED { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--color-blue); }
-.badge-PENDING { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--color-yellow); }
-.badge-CANCELLED { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glow); color: var(--text-secondary); }
-.badge-NO_SHOW { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--color-red); }
-
-/* Pagination */
-.pagination-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.02);
-}
-
-.pag-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-glow);
-  color: var(--text-primary);
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.pag-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.pag-info {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-/* Sliding Drawer Overlay */
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 999;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.detail-drawer {
-  width: 460px;
-  height: 100vh;
-  border-radius: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  flex-direction: column;
-  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
 }
 
 @keyframes slideIn {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
-}
-
-.drawer-header {
-  padding: 24px;
-  border-bottom: 1px solid var(--border-glow);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.drawer-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--color-blue);
-  letter-spacing: 0.15em;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.drawer-header h3 {
-  font-family: var(--font-title);
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.drawer-close {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.75rem;
-  cursor: pointer;
-}
-
-.drawer-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.drawer-section h4 {
-  font-family: var(--font-title);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-  border-left: 3px solid var(--color-blue);
-  padding-left: 8px;
-}
-
-.drawer-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.01);
-  padding: 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.02);
-}
-
-.grid-cell {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-}
-
-.lbl {
-  color: var(--text-secondary);
-}
-
-.val {
-  color: var(--text-primary);
-}
-
-/* Symptom Box detail */
-.symptom-box {
-  background: rgba(245, 158, 11, 0.03);
-  border: 1px solid rgba(245, 158, 11, 0.15);
-  border-radius: 8px;
-  padding: 14px;
-  display: flex;
-  gap: 12px;
-}
-
-.symptom-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-yellow);
-  box-shadow: 0 0 6px var(--color-yellow);
-  margin-top: 6px;
-}
-
-.symptom-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-yellow);
-}
-
-.symptom-desc {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-
-/* Timeline component */
-.timeline {
-  display: flex;
-  flex-direction: column;
-  padding-left: 8px;
-  margin-top: 8px;
-}
-
-.timeline-item {
-  position: relative;
-  padding-left: 24px;
-  padding-bottom: 20px;
-}
-
-.t-line {
-  position: absolute;
-  top: 14px;
-  left: 5px;
-  width: 2px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  z-index: 1;
-}
-
-.timeline-item.done .t-line {
-  background: var(--color-blue);
-}
-
-.t-dot {
-  position: absolute;
-  top: 4px;
-  left: 1px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px stroke rgba(255, 255, 255, 0.2);
-  z-index: 2;
-}
-
-.timeline-item.done .t-dot {
-  background: var(--color-blue);
-  box-shadow: 0 0 6px var(--color-blue);
-}
-
-.timeline-item.last .t-dot {
-  background: var(--text-muted);
-}
-
-.timeline-item.last.completed .t-dot { background: var(--color-green); box-shadow: 0 0 6px var(--color-green); }
-.timeline-item.last.no_show .t-dot { background: var(--color-red); box-shadow: 0 0 6px var(--color-red); }
-.timeline-item.last.cancelled .t-dot { background: var(--text-muted); }
-.timeline-item.last.confirmed .t-dot { background: var(--color-blue); }
-.timeline-item.last.pending .t-dot { background: var(--color-yellow); }
-
-.t-title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.t-time {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.loading-pulse {
-  animation: pulse-op 1.5s infinite alternate;
 }
 </style>

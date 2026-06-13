@@ -90,7 +90,29 @@ ${activeOutbreakSummary}
     const fullPrompt = `${systemInstruction}\n\nบริบทสถิติล่าสุด:\n${statsContext}\n\nคำถามผู้ใช้/คำสั่ง: ${userMessage}`;
 
     // 3. Invoke Gemini API
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NUXT_GEMINI_API_KEY || '';
+    let apiKey = process.env.GEMINI_API_KEY || process.env.NUXT_GEMINI_API_KEY || '';
+
+    if (!apiKey) {
+      try {
+        const pathsToTry = [
+          path.resolve(process.cwd(), '.env'),
+          path.resolve(process.cwd(), '../.env'),
+          path.resolve(process.cwd(), 'frontend_AI/.env')
+        ];
+        for (const p of pathsToTry) {
+          if (fs.existsSync(p)) {
+            const content = fs.readFileSync(p, 'utf-8');
+            const match = content.match(/^GEMINI_API_KEY\s*=\s*(.*)$/m);
+            if (match && match[1]) {
+              apiKey = match[1].trim().replace(/^["']|["']$/g, '');
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error reading fallback .env files:', err);
+      }
+    }
 
     if (!apiKey) {
       console.warn('GEMINI_API_KEY is missing. Utilizing mock response generator.');
@@ -102,7 +124,7 @@ ${activeOutbreakSummary}
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
