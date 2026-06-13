@@ -20,6 +20,8 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const userMessage = body?.message || 'ช่วยสรุปภาพรวมสถานการณ์โรคระบาดในเดือนนี้ให้หน่อย';
   const isAutoSummary = body?.isAutoSummary || false;
+  const isSpreadsheetAnalysis = body?.isSpreadsheetAnalysis || false;
+  const sheetData = body?.sheetData || '';
 
   const dataDir = path.resolve(process.cwd(), 'server/data');
 
@@ -79,7 +81,38 @@ ${activeOutbreakSummary}
 - ในกรุงเทพฯ มีแนวโน้มเคส Dengue Fever (ไข้เลือดออก) และ Covid-19 สูงขึ้น
 `;
 
-    const systemInstruction = `คุณคือ "AI Outbreak Analyst" นักระบาดวิทยาและนักวิเคราะห์ข้อมูลโรคระบาดอัจฉริยะ 
+    let fullPrompt = '';
+
+    if (isSpreadsheetAnalysis) {
+      const systemInstruction = `คุณคือ "ระบบ AI ประมวลผลข้อมูลสุขภาพเชิงพื้นที่ขั้นสูง" มีหน้าที่รับข้อมูลดิบในรูปแบบตารางซีต (Spreadsheet / CSV Data) ที่ส่งเข้ามาเพื่อทำการวิเคราะห์โรครายบุคคล ตรวจสอบพฤติกรรมการระบาดในแต่ละพื้นที่ และให้แนวทางการป้องกันภาพรวม
+
+### คำชี้แจงในการตอบกลับ (Strict Output Format Constraints)
+1. ตอบกลับเป็นภาษาไทย และจัดเตรียมรายงานตามโครงสร้างด้านล่างนี้ทันที โดยเริ่มต้นที่หัวข้อ "#### ส่วนที่ 1:"
+2. **ห้ามกล่าวคำทักทาย ห้ามเกริ่นนำ หรือพูดคุยสรุปปิดท้ายใดๆ ทั้งสิ้น** ให้แสดงรายงานสรุปทันที เพื่อความคลีนและตรงประเด็น
+3. ในส่วนที่ 1 ต้องแสดงผลลัพธ์เป็น **ตารางสรุปในรูปแบบ Markdown Table เท่านั้น** โดยใช้โครงสร้างคอลัมน์ดังนี้:
+   | Patient_ID | Predicted Disease | Confidence Level | Disease Stage / Urgency |
+   |------------|-------------------|------------------|-------------------------|
+4. ในคอลัมน์ Disease Stage / Urgency ให้แสดงระดับความรุนแรงและแนวทางปฏิบัติเป็นคำว่า:
+   - Green (เฝ้าระวังตัวที่บ้าน...)
+   - Yellow (ควรพบแพทย์...)
+   - Red (อันตรายวิกฤตต้องเข้าโรงพยาบาลทันที...)
+5. ในส่วนที่ 2 (สรุป Insight ความเสี่ยงเชิงพื้นที่) ให้วิเคราะห์ตำบล/พื้นที่ที่หนาแน่นเป็นพิเศษ และกลุ่มอาการระบาด
+6. ในส่วนที่ 3 (แผนการป้องกันและการรับมือของชุมชน) ให้คำแนะนำแก่เจ้าหน้าที่ในพื้นที่นั้นๆ
+7. เติม Medical Disclaimer ท้ายรายงานเสมอ โดยใช้รูปแบบ Markdown italic: *Medical Disclaimer: การประเมินความเสี่ยงและคัดกรองระบาดวิทยาเบื้องต้นด้วย AI จากข้อมูลในซีตเท่านั้น ไม่สามารถใช้ทดแทนการตรวจสอบทางห้องปฏิบัติการ (Lab) หรือการวินิจฉัยทางการแพทย์อย่างเป็นทางการได้*
+
+### รายละเอียดสิ่งที่ต้องการให้วิเคราะห์:
+**ส่วนที่ 1: ตารางผลลัพธ์การวินิจฉัยรายบุคคล (Individual Diagnosis Table)**
+- วิเคราะห์ข้อมูลผู้ป่วยแต่ละราย (Patient_ID) หาโรคที่น่าจะเป็นมากที่สุด (Predicted Disease) ระดับความมั่นใจ (Confidence Level: High/Medium/Low) และระดับความเร่งด่วนตามเกณฑ์ด้านบน
+
+**ส่วนที่ 2: สรุป Insight ความเสี่ยงเชิงพื้นที่ (Spatial Clustering & Epidemic Analysis)**
+- วิเคราะห์ตำบล/อำเภอที่มีความหนาแน่นของผู้ป่วยเป็นพิเศษ (Cluster) พร้อมความเสี่ยงการระบาดของโรคเฉพาะถิ่น
+
+**ส่วนที่ 3: แผนการป้องกันและการรับมือของชุมชน (Community Action Plan)**
+- มาตรการรับมือสำหรับพื้นที่ที่มีสถิติผู้ป่วยสะสมสูงสุดในซีต`;
+
+      fullPrompt = `${systemInstruction}\n\nข้อมูลตารางซีตของคนไข้ที่ผู้ใช้อัปโหลด (Input Data Table):\n${sheetData}\n\nคำสั่ง: กรุณาวิเคราะห์ข้อมูลด้านบนและเขียนรายงานสรุปทันทีตามข้อกำหนดและโครงสร้างข้างต้น`;
+    } else {
+      const systemInstruction = `คุณคือ "AI Outbreak Analyst" นักระบาดวิทยาและนักวิเคราะห์ข้อมูลโรคระบาดอัจฉริยะ 
 ใช้ข้อมูลสรุปทางสถิติด้านสาธารณสุขของประเทศไทยที่ให้มาเพื่อตอบคำถามของผู้ใช้งาน
 กติกาการตอบ:
 1. ตอบเป็นภาษาไทยอย่างเป็นมืออาชีพ สุภาพ กระชับ และเข้าใจง่าย
@@ -87,7 +120,8 @@ ${activeOutbreakSummary}
 3. มีการเน้นข้อความสำคัญ เช่น ตัวเลข หรือชื่อโรค เพื่อให้อ่านง่าย
 4. แนะนำวิธีรับมือในเชิงระบาดวิทยาเบื้องต้นด้วย`;
 
-    const fullPrompt = `${systemInstruction}\n\nบริบทสถิติล่าสุด:\n${statsContext}\n\nคำถามผู้ใช้/คำสั่ง: ${userMessage}`;
+      fullPrompt = `${systemInstruction}\n\nบริบทสถิติล่าสุด:\n${statsContext}\n\nคำถามผู้ใช้/คำสั่ง: ${userMessage}`;
+    }
 
     // 3. Invoke Gemini API
     let apiKey = process.env.GEMINI_API_KEY || process.env.NUXT_GEMINI_API_KEY || '';
@@ -118,7 +152,7 @@ ${activeOutbreakSummary}
       console.warn('GEMINI_API_KEY is missing. Utilizing mock response generator.');
       return {
         success: true,
-        response: getMockResponse(userMessage, isAutoSummary, statsContext),
+        response: getMockResponse(userMessage, isAutoSummary, statsContext, isSpreadsheetAnalysis),
         isMock: true
       };
     }
@@ -174,7 +208,7 @@ ${activeOutbreakSummary}
     console.error('API Analyst error, generating fallback mock response:', error);
     return {
       success: true,
-      response: getMockResponse(userMessage, isAutoSummary, ''),
+      response: getMockResponse(userMessage, isAutoSummary, '', isSpreadsheetAnalysis),
       isMock: true,
       error: error.message
     };
@@ -182,8 +216,32 @@ ${activeOutbreakSummary}
 });
 
 // A localized mock responder mimicking the Gemini analyst in case of offline/no-key usage
-function getMockResponse(query: string, isAuto: boolean, context: string): string {
+function getMockResponse(query: string, isAuto: boolean, context: string, isSpreadsheetAnalysis: boolean = false): string {
   const queryLower = query.toLowerCase();
+  
+  if (isSpreadsheetAnalysis) {
+    return `### รายงานการวิเคราะห์ระบบสุขภาพเชิงพื้นที่เชิงลึก (AI Spatial Health Report)
+
+#### ส่วนที่ 1: ตารางผลลัพธ์การวินิจฉัยรายบุคคล (Individual Diagnosis Table)
+| Patient_ID | Predicted Disease | Confidence Level | Disease Stage / Urgency |
+|------------|-------------------|------------------|-------------------------|
+| P001       | ไข้เลือดออก (Dengue Fever) | High | Yellow (ควรพบแพทย์เพื่อเจาะเลือดตรวจซ้ำ) |
+| P002       | โควิด-19 (COVID-19) | High | Yellow (แนะนำกักตัวและแยกของใช้ส่วนตัว) |
+| P003       | ไข้หวัดใหญ่ (Influenza) | Medium | Green (เฝ้าระวังอาการที่บ้าน ทานยาลดไข้พารา) |
+| P004       | ไข้ปวดข้อยุงลาย (Chikungunya) | High | Red (อาการปวดข้อกระดูกรุนแรง ควรพบแพทย์ทันที) |
+
+#### ส่วนที่ 2: สรุป Insight ความเสี่ยงเชิงพื้นที่ (Spatial Clustering & Epidemic Analysis)
+*   **คลัสเตอร์ความเสี่ยงโรคติดต่อจากยุงลาย (ตำบลขามเรียง อำเภอกันทรวิชัย):** พบผู้ป่วย 2 รายในพื้นที่ตำบลขามเรียง มีอาการตรงกับไข้เลือดออก (P001) และชิคุนกุนยา (P004) สันนิษฐานว่ามีแหล่งน้ำขังหรือพาหะนำโรคชุกชุมในชุมชนนี้
+*   **การเฝ้าระวังโรคทางเดินหายใจ (ตำบลท่าขอนยาง & ตลาด):** พบเคสอาการไอ ลิ้นไม่รับรส (โควิด-19) และไข้หวัดทั่วไปแบบกลุ่มย่อย จำเป็นต้องเฝ้าระวังความแออัดในพื้นที่ชุมชนและโรงเรียน
+
+#### ส่วนที่ 3: แผนการป้องกันและการรับมือของชุมชน (Community Action Plan)
+1.  **มาตรการจำกัดแหล่งเพาะพันธุ์พาหะ (ตำบลขามเรียง):** รณรงค์ทำความสะอาดชุมชน เทน้ำขังในภาชนะ แจกทรายอะเบทใส่โอ่งน้ำ และพ่นสารเคมีกำจัดยุงลายตัวแก่
+2.  **มาตรการคุมเข้มการแพร่เชื้อทางเดินหายใจ (ตำบลท่าขอนยาง & ตลาด):** ประสานงาน อสม. แนะนำผู้ป่วยที่มีอาการไอ/มีไข้ต่ำ ให้สวมหน้ากากอนามัย และแยกสังเกตอาการ
+3.  **การจัดเตรียมเวชภัณฑ์:** เตรียมชุดตรวจคัดกรอง ATK, ยาพาราเซตามอล, และเกลือแร่ (ORS) ให้พร้อมบริการ ณ รพ.สต. ในพื้นที่
+
+---
+*Medical Disclaimer: การประเมินความเสี่ยงและคัดกรองระบาดวิทยาเบื้องต้นด้วย AI จากข้อมูลในซีตเท่านั้น ไม่สามารถใช้ทดแทนการตรวจสอบทางห้องปฏิบัติการ (Lab) หรือการวินิจฉัยทางการแพทย์อย่างเป็นทางการได้*`;
+  }
   
   if (isAuto) {
     return `🚨 **การเตือนภัยทางระบาดวิทยาปัจจุบัน (ระดับสีเหลือง):** พบผู้ป่วยอาการ **ไข้หวัดใหญ่ (Flu symptoms)** พุ่งสูงขึ้นผิดปกติอย่างมีนัยสำคัญในเขตพื้นที่ **เชียงใหม่** (เพิ่มขึ้น 40% ใน 7 วันล่าสุด) และพบเคส **อาหารเป็นพิษ (Food Poisoning)** ต่อเนื่องในเขตท่องเที่ยว **ภูเก็ต** โปรดเฝ้าระวังอย่างใกล้ชิด`;
