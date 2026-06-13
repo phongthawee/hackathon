@@ -1,3 +1,4 @@
+  //pages/diagnose
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
@@ -356,3 +357,4 @@ onMounted(() => {
   background: #475569;
 }
 </style>
+
