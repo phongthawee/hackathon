@@ -420,11 +420,87 @@ function scrollToBottom() {
 
 function formatMarkdown(text) {
   if (!text) return '';
-  return text
+  
+  let html = text;
+  
+  // Parse markdown tables
+  const lines = html.split('\n');
+  let inTable = false;
+  let tableRows = [];
+  let newLines = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('|') && line.endsWith('|')) {
+      if (!inTable) {
+        inTable = true;
+        tableRows = [];
+      }
+      tableRows.push(line);
+    } else {
+      if (inTable) {
+        newLines.push(renderMarkdownTable(tableRows));
+        inTable = false;
+      }
+      newLines.push(lines[i]);
+    }
+  }
+  if (inTable) {
+    newLines.push(renderMarkdownTable(tableRows));
+  }
+  
+  html = newLines.join('\n');
+  
+  return html
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code class="bg-surface-container px-1 py-0.5 rounded text-[11px]">$1</code>')
     .replace(/\n/g, '<br />');
+}
+
+function renderMarkdownTable(rows) {
+  if (rows.length < 2) return rows.join('\n');
+  
+  // Check if second row is alignment row
+  const isSeparator = /^\|?[\s:-|]+$/g.test(rows[1]);
+  const startIdx = isSeparator ? 2 : 1;
+  
+  const headers = rows[0]
+    .split('|')
+    .slice(1, -1)
+    .map(cell => cell.trim());
+    
+  let tableHtml = '<div class="overflow-x-auto my-3 rounded-xl border border-surface-variant shadow-sm"><table class="w-full text-xs border-collapse text-left"><thead class="bg-surface-container-high font-bold border-b border-surface-variant text-on-surface"><tr>';
+  
+  headers.forEach(h => {
+    tableHtml += `<th class="p-3 border-r border-surface-variant last:border-0">${h}</th>`;
+  });
+  tableHtml += '</tr></thead><tbody class="divide-y divide-surface-variant bg-surface">';
+  
+  for (let i = startIdx; i < rows.length; i++) {
+    const cells = rows[i]
+      .split('|')
+      .slice(1, -1)
+      .map(cell => cell.trim());
+      
+    tableHtml += '<tr class="hover:bg-surface-container-low/50 transition-colors">';
+    cells.forEach((cell, idx) => {
+      let content = cell;
+      // Style Urgency pills: Red, Yellow, Green
+      if (cell.toLowerCase().includes('red')) {
+        content = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-error-container text-on-error-container border border-error-container/20"><span class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>${cell}</span>`;
+      } else if (cell.toLowerCase().includes('yellow')) {
+        content = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning-container text-on-warning-container border border-warning-container/20"><span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>${cell}</span>`;
+      } else if (cell.toLowerCase().includes('green')) {
+        content = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-success-container text-on-success-container border border-success-container/20"><span class="w-1.5 h-1.5 rounded-full bg-success"></span>${cell}</span>`;
+      }
+      tableHtml += `<td class="p-3 border-r border-surface-variant last:border-0 text-on-surface">${content}</td>`;
+    });
+    tableHtml += '</tr>';
+  }
+  
+  tableHtml += '</tbody></table></div>';
+  return tableHtml;
 }
 
 // Monitor real-time pings to trigger stats reload and recent alerts updates
