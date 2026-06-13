@@ -1,6 +1,5 @@
 import { defineEventHandler } from 'h3';
-import fs from 'fs';
-import path from 'path';
+import { serverSupabaseClient } from '#supabase/server';
 
 const hospitalToCity: Record<string, string> = {
   'Chiang Mai Ram': 'Chiang Mai',
@@ -13,14 +12,6 @@ const hospitalToCity: Record<string, string> = {
   'Siam Medical': 'Bangkok',
   'Central Health': 'Chon Buri',
   'City Hospital': 'Khon Kaen'
-};
-
-const cityCoordinates: Record<string, { lat: number; lng: number }> = {
-  'Bangkok': { lat: 13.7563, lng: 100.5018 },
-  'Chiang Mai': { lat: 18.7883, lng: 98.9853 },
-  'Phuket': { lat: 7.8804, lng: 98.3923 },
-  'Khon Kaen': { lat: 16.4322, lng: 102.8236 },
-  'Chon Buri': { lat: 13.3611, lng: 100.9847 }
 };
 
 interface AppointmentRaw {
@@ -39,38 +30,117 @@ interface Doctor {
   hospital: string;
 }
 
-export default defineEventHandler(async () => {
-  const dataDir = path.resolve(process.cwd(), 'server/data');
+interface LocationRecord {
+  location_id: string;
+  name: string;
+  type: string;
+  address: string;
+  coordinates: { lat?: number; lng?: number } | null;
+}
+
+function normalizeName(value: string) {
+  return (value || '')
+    .toLowerCase()
+    .replace(/hospital|medical|center|international|memorial|general|city|clinic/gi, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function detectCityFromAddress(address: string) {
+  const source = (address || '').toLowerCase();
+  if (source.includes('chiang mai')) return 'Chiang Mai';
+  if (source.includes('phuket')) return 'Phuket';
+  if (source.includes('khon kaen')) return 'Khon Kaen';
+  if (source.includes('chon buri')) return 'Chon Buri';
+  if (source.includes('bangkok')) return 'Bangkok';
+  return 'Bangkok';
+}
+
+export default defineEventHandler(async (event) => {
+  const supabase = await serverSupabaseClient(event);
 
   try {
-    const appointmentsRaw: AppointmentRaw[] = JSON.parse(
-      fs.readFileSync(path.join(dataDir, 'appointments.json'), 'utf-8')
-    );
-    const doctors: Doctor[] = JSON.parse(
-      fs.readFileSync(path.join(dataDir, 'doctors.json'), 'utf-8')
-    );
+    const { data: appointmentsRaw, error: appointmentsError } = await supabase
+      .from('appointments')
+      .select('apt_id,user_id,doctor_id,date,symptom,status');
+
+    if (appointmentsError) {
+      throw appointmentsError;
+    }
+
+    const doctorIds = [...new Set((appointmentsRaw || []).map(a => a.doctor_id).filter(Boolean))] as string[];
+    let doctors: Doctor[] = [];
+    if (doctorIds.length > 0) {
+      const { data, error } = await supabase
+        .from('doctors')
+        .select('doctor_id,name,department,hospital')
+        .in('doctor_id', doctorIds);
+      if (error) {
+        throw error;
+      }
+      doctors = (data || []) as Doctor[];
+    }
+
+    const { data: locationsRaw, error: locationsError } = await supabase
+      .from('locations')
+      .select('location_id,name,type,address,coordinates')
+      .eq('type', 'HOSPITAL');
+
+    if (locationsError) {
+      throw locationsError;
+    }
+
+    const locations = (locationsRaw || []) as LocationRecord[];
+    const locationsByNormalizedName = new Map<string, LocationRecord>();
+    locations.forEach(loc => {
+      locationsByNormalizedName.set(normalizeName(loc.name), loc);
+    });
 
     const docMap = new Map<string, Doctor>();
     doctors.forEach(doc => docMap.set(doc.doctor_id, doc));
 
-    const totalCases = appointmentsRaw.length;
+    const appointments = (appointmentsRaw || []) as AppointmentRaw[];
+    const totalCases = appointments.length;
 
     // 1. Calculate No-Show rate
-    const noShowCases = appointmentsRaw.filter(a => a.status === 'NO_SHOW').length;
+    const noShowCases = appointments.filter(a => a.status === 'NO_SHOW').length;
     const noShowRate = totalCases > 0 ? (noShowCases / totalCases) * 100 : 0;
 
     // 2. Map symptoms & departments
     const symptomCounts: Record<string, number> = {};
     const departmentCounts: Record<string, number> = {};
-    const cityData: Record<string, { total: number; symptoms: Record<string, number>; active: number }> = {
-      'Bangkok': { total: 0, symptoms: {}, active: 0 },
-      'Chiang Mai': { total: 0, symptoms: {}, active: 0 },
-      'Phuket': { total: 0, symptoms: {}, active: 0 },
-      'Khon Kaen': { total: 0, symptoms: {}, active: 0 },
-      'Chon Buri': { total: 0, symptoms: {}, active: 0 }
-    };
+    const hotspotData = new Map<string, {
+      locationId: string;
+      city: string;
+      locationName: string;
+      lat: number;
+      lng: number;
+      total: number;
+      active: number;
+      symptoms: Record<string, number>;
+    }>();
 
-    appointmentsRaw.forEach(apt => {
+    // Start from DB hospital locations so every hospital is visible on the map.
+    locations.forEach((loc) => {
+      if (!loc.coordinates?.lat || !loc.coordinates?.lng) {
+        return;
+      }
+
+      const city = detectCityFromAddress(loc.address);
+      const key = loc.location_id;
+
+      hotspotData.set(key, {
+        locationId: loc.location_id,
+        city,
+        locationName: loc.name,
+        lat: Number(loc.coordinates.lat),
+        lng: Number(loc.coordinates.lng),
+        total: 0,
+        active: 0,
+        symptoms: {}
+      });
+    });
+
+    appointments.forEach(apt => {
       // General symptoms count
       symptomCounts[apt.symptom] = (symptomCounts[apt.symptom] || 0) + 1;
 
@@ -82,11 +152,22 @@ export default defineEventHandler(async () => {
         
         // City mapping
         const city = hospitalToCity[doc.hospital] || 'Bangkok';
-        if (cityData[city]) {
-          cityData[city].total += 1;
-          cityData[city].symptoms[apt.symptom] = (cityData[city].symptoms[apt.symptom] || 0) + 1;
+
+        const normalizedDoctorHospital = normalizeName(doc.hospital);
+        const location = locationsByNormalizedName.get(normalizedDoctorHospital);
+        if (!location) {
+          return;
+        }
+
+        const key = location.location_id;
+
+        const aggregate = hotspotData.get(key);
+        if (aggregate) {
+          aggregate.city = city;
+          aggregate.total += 1;
+          aggregate.symptoms[apt.symptom] = (aggregate.symptoms[apt.symptom] || 0) + 1;
           if (apt.status === 'CONFIRMED' || apt.status === 'PENDING') {
-            cityData[city].active += 1;
+            aggregate.active += 1;
           }
         }
       }
@@ -114,13 +195,11 @@ export default defineEventHandler(async () => {
       .sort((a, b) => b.value - a.value);
 
     // 6. Format Province Map Pin Hotspots
-    const hotspots = Object.entries(cityData).map(([city, data]) => {
+    const hotspots = Array.from(hotspotData.values()).map((data) => {
       const sortedSymptoms = Object.entries(data.symptoms)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([name, count]) => `${name} (${count})`);
-
-      const coords = cityCoordinates[city] || { lat: 13.7563, lng: 100.5018 };
       
       // Dynamic severity status logic
       let severity: 'high' | 'medium' | 'low' = 'low';
@@ -131,9 +210,11 @@ export default defineEventHandler(async () => {
       }
 
       return {
-        city,
-        lat: coords.lat,
-        lng: coords.lng,
+        locationId: data.locationId,
+        city: data.city,
+        hospitalName: data.locationName,
+        lat: data.lat,
+        lng: data.lng,
         totalCases: data.total,
         activeCases: data.active,
         severity,
@@ -149,8 +230,13 @@ export default defineEventHandler(async () => {
 
     // Generate weekly bins
     const weeks: string[] = [];
-    const tempDate = new Date('2026-03-15T00:00:00Z');
-    const endDate = new Date('2026-06-25T00:00:00Z');
+    const endDate = appointments.length
+      ? new Date(Math.max(...appointments.map(a => new Date(a.date).getTime())))
+      : new Date();
+    const tempDate = new Date(endDate);
+    tempDate.setDate(endDate.getDate() - 84);
+    tempDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
 
     while (tempDate.getTime() <= endDate.getTime()) {
       const dateStr = tempDate.toISOString().split('T')[0];
@@ -166,7 +252,7 @@ export default defineEventHandler(async () => {
       tempDate.setDate(tempDate.getDate() + 7); // Increment by 1 week
     }
 
-    appointmentsRaw.forEach(apt => {
+    appointments.forEach(apt => {
       const aptTime = new Date(apt.date).getTime();
       
       // Find the closest preceding week bin
@@ -199,8 +285,8 @@ export default defineEventHandler(async () => {
     });
 
     // Alert logic based on active case speed in the last week
-    const lastWeekLimit = new Date('2026-06-06T00:00:00Z').getTime();
-    const recentCases = appointmentsRaw.filter(
+    const lastWeekLimit = endDate.getTime() - (7 * 24 * 60 * 60 * 1000);
+    const recentCases = appointments.filter(
       a => new Date(a.date).getTime() >= lastWeekLimit && (a.symptom === 'Flu symptoms' || a.symptom === 'Dengue Fever')
     ).length;
 
@@ -218,7 +304,7 @@ export default defineEventHandler(async () => {
         alertLevel,
         topSymptom,
         noShowRate: parseFloat(noShowRate.toFixed(1)),
-        activeCitiesCount: hotspots.filter(h => h.totalCases > 0).length
+        activeCitiesCount: new Set(hotspots.map(h => h.city)).size
       },
       hotspots,
       trend,

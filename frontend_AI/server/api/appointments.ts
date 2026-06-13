@@ -1,6 +1,5 @@
 import { defineEventHandler, getQuery } from 'h3';
-import fs from 'fs';
-import path from 'path';
+import { serverSupabaseClient } from '#supabase/server';
 
 // Define data mappings for geographical routing
 const hospitalToCity: Record<string, string> = {
@@ -42,6 +41,7 @@ interface User {
 }
 
 export default defineEventHandler(async (event) => {
+  const supabase = await serverSupabaseClient(event);
   const query = getQuery(event);
   
   // Extract query parameters
@@ -55,19 +55,42 @@ export default defineEventHandler(async (event) => {
   const startDateStr = query.startDate as string || '';
   const endDateStr = query.endDate as string || '';
 
-  const dataDir = path.resolve(process.cwd(), 'server/data');
-
   try {
-    // Read JSON files
-    const appointmentsRaw: AppointmentRaw[] = JSON.parse(
-      fs.readFileSync(path.join(dataDir, 'appointments.json'), 'utf-8')
-    );
-    const doctors: Doctor[] = JSON.parse(
-      fs.readFileSync(path.join(dataDir, 'doctors.json'), 'utf-8')
-    );
-    const users: User[] = JSON.parse(
-      fs.readFileSync(path.join(dataDir, 'users.json'), 'utf-8')
-    );
+    const { data: appointmentsRaw, error: appointmentsError } = await supabase
+      .from('appointments')
+      .select('apt_id,user_id,doctor_id,date,symptom,status')
+      .order('date', { ascending: false });
+
+    if (appointmentsError) {
+      throw appointmentsError;
+    }
+
+    const doctorIds = [...new Set((appointmentsRaw || []).map(a => a.doctor_id).filter(Boolean))] as string[];
+    const userIds = [...new Set((appointmentsRaw || []).map(a => a.user_id).filter(Boolean))] as string[];
+
+    let doctors: Doctor[] = [];
+    if (doctorIds.length > 0) {
+      const { data, error } = await supabase
+        .from('doctors')
+        .select('doctor_id,name,department,hospital')
+        .in('doctor_id', doctorIds);
+      if (error) {
+        throw error;
+      }
+      doctors = (data || []) as Doctor[];
+    }
+
+    let users: User[] = [];
+    if (userIds.length > 0) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('user_id,name,email,phone,loyalty_points,role')
+        .in('user_id', userIds);
+      if (error) {
+        throw error;
+      }
+      users = (data || []) as User[];
+    }
 
     // Create lookup maps
     const docMap = new Map<string, Doctor>();
@@ -77,7 +100,7 @@ export default defineEventHandler(async (event) => {
     users.forEach(user => userMap.set(user.user_id, user));
 
     // Join entities
-    let joined = appointmentsRaw.map(apt => {
+    let joined = ((appointmentsRaw || []) as AppointmentRaw[]).map(apt => {
       const doc = docMap.get(apt.doctor_id);
       const user = userMap.get(apt.user_id);
       const docCity = doc ? (hospitalToCity[doc.hospital] || 'Bangkok') : 'Bangkok';
