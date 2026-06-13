@@ -1,3 +1,4 @@
+//composables/useAppointments.ts
 import type { AppGetResponse } from "~/model/appointments/response/app_get_res";
 
 export const useAppointments = () => {
