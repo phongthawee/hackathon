@@ -90,7 +90,9 @@
 
       <!-- Main Content Area Router -->
       <main :class="route.path === '/map' ? 'flex-1 bg-background flex flex-col relative overflow-hidden h-screen w-full' : 'p-margin pt-lg pb-xl bg-background flex-1'">
+      <NuxtLayout>
         <NuxtPage />
+      </NuxtLayout>
       </main>
     </div>
 
