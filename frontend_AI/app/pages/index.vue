@@ -89,14 +89,16 @@
       </div>
     </div>
 
-    <!-- 2. Outbreak Map & AI Analyst (Side by Side Row) -->
+    <!-- 2. Leaflet Map & AI Analyst (Side by Side Row) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-md items-start">
-      <!-- Outbreak Map Card (8 Cols) -->
+      <!-- Outbreak Geographical Map Card (8 Cols) -->
       <div class="lg:col-span-7 h-full">
-        <ThailandMap 
-          :hotspots="hotspots" 
-          :active-ping-city="activePingCity"
-          @select-city="handleSelectCity" />
+        <!-- Render Leaflet Map dynamically inside client -->
+        <ClientOnly>
+          <LeafletMap 
+            :hotspots="hotspots" 
+            @select-city="handleSelectCity" />
+        </ClientOnly>
       </div>
 
       <!-- AI Outbreak Analyst Chat & Province Details Console (5 Cols) -->
@@ -274,7 +276,7 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useState } from '#app';
-import ThailandMap from '~/components/ThailandMap.vue';
+import LeafletMap from '~/components/LeafletMap.vue';
 import SymptomChart from '~/components/SymptomChart.vue';
 
 const router = useRouter();
@@ -373,6 +375,7 @@ function handleSelectCity(cityData) {
   selectedCityData.value = cityData;
 }
 
+// Search coordinates parameters redirects
 function investigateCity(cityName) {
   router.push({
     path: '/explorer',
