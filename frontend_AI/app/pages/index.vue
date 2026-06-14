@@ -16,8 +16,8 @@
         </p>
       </div>
 
-      <!-- AI Outbreak Banner -->
-      <!-- <div class="bg-error-container border border-error/20 rounded-lg p-sm flex items-start gap-sm max-w-lg shadow-sm">
+      <!-- AI Outbreak Banner
+      <div class="bg-error-container border border-error/20 rounded-lg p-sm flex items-start gap-sm max-w-lg shadow-sm">
         <span class="material-symbols-outlined text-on-error-container mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
         <div>
           <div class="font-label-caps text-label-caps text-on-error-container mb-1">แจ้งเตือนระบาดวิทยาอัตโนมัติ (AI Alert)</div>
@@ -26,13 +26,14 @@
           </div>
         </div>
       </div> -->
+      <!-- </div> -->
     </div>
 
     <!-- 1. KPI Grid (5 Columns) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-md mb-xs">
       <!-- Total Cases -->
       <div
-        class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-surface-variant"
+        class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-surface-variant col-span-2 md:col-span-1"
       >
         <div
           class="font-label-caps text-label-caps text-on-surface-variant mb-sm flex items-center justify-between"
@@ -301,7 +302,11 @@
             >
               <span
                 class="text-[10px] font-bold mb-1"
-                :class="msg.role === 'user' ? 'text-primary-fixed-dim' : 'text-outline'"
+                :class="
+                  msg.role === 'user'
+                    ? 'text-primary-fixed-dim'
+                    : 'text-outline'
+                "
               >
                 {{ msg.role === "user" ? "คุณหมอแนน" : "Analyst 🤖" }}
               </span>
@@ -315,8 +320,12 @@
             >
               <span>กำลังประมวลผลข้อมูล...</span>
               <span class="animate-bounce">.</span>
-              <span class="animate-bounce" style="animation-delay: 0.2s">.</span>
-              <span class="animate-bounce" style="animation-delay: 0.4s">.</span>
+              <span class="animate-bounce" style="animation-delay: 0.2s"
+                >.</span
+              >
+              <span class="animate-bounce" style="animation-delay: 0.4s"
+                >.</span
+              >
             </div>
           </div>
 
@@ -337,7 +346,7 @@
               class="bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90"
               :disabled="loadingChat || !aiQuery.trim()"
             >
-              ส่ง 
+              ส่ง
             </button>
           </form>
         </div>
@@ -361,11 +370,7 @@
           <h3
             class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-sm"
           >
-            <span
-              class="material-symbols-outlined text-error"
-              style="font-variation-settings: &quot;FILL&quot; 1"
-              >cell_tower</span
-            >
+            <span class="material-symbols-outlined text-error">cell_tower</span>
             การแจ้งเตือนล่าสุด
           </h3>
           <span
