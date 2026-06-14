@@ -1,9 +1,9 @@
 <template>
   <!-- 1. Line Trend Chart -->
   <div v-if="type === 'line'" class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-surface-variant flex flex-col min-h-[400px]">
-    <div class="flex items-center justify-between mb-md">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-md gap-3">
       <h3 class="font-headline-sm text-lg text-on-surface font-bold">แนวโน้มอาการรายเดือน</h3>
-      <div class="flex items-center gap-sm">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span class="flex items-center gap-1.5 text-xs font-data-mono cursor-pointer transition-opacity duration-300" 
               v-for="series in seriesMeta" :key="series.key"
               @mouseenter="hoveredSymptom = series.name"
@@ -15,60 +15,63 @@
       </div>
     </div>
     
-    <div class="flex-1 w-full bg-surface-container-low rounded-lg relative overflow-hidden flex items-end p-4 border border-surface-variant">
-      <svg viewBox="0 0 540 200" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-        <!-- Area gradients -->
-        <defs v-for="series in seriesMeta" :key="'grad-' + series.key">
-          <linearGradient :id="'area-' + series.key" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" :stop-color="series.color" stop-opacity="0.3" />
-            <stop offset="100%" :stop-color="series.color" stop-opacity="0" />
-          </linearGradient>
-        </defs>
+    <div class="flex-grow w-full bg-surface-container-low rounded-lg relative overflow-hidden flex items-end p-4 border border-surface-variant">
+      <div class="w-full overflow-x-auto min-w-0 scrollbar-thin">
+        <div class="min-w-[540px] md:min-w-0 w-full">
+          <svg viewBox="0 0 540 200" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+            <!-- Area gradients -->
+            <defs v-for="series in seriesMeta" :key="'grad-' + series.key">
+              <linearGradient :id="'area-' + series.key" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" :stop-color="series.color" stop-opacity="0.3" />
+                <stop offset="100%" :stop-color="series.color" stop-opacity="0" />
+              </linearGradient>
+            </defs>
 
-        <!-- Grids -->
-        <g stroke="rgba(0,0,0,0.03)" stroke-width="1">
-          <line x1="40" y1="20" x2="520" y2="20" />
-          <line x1="40" y1="60" x2="520" y2="60" />
-          <line x1="40" y1="100" x2="520" y2="100" />
-          <line x1="40" y1="140" x2="520" y2="140" />
-          <line x1="40" y1="160" x2="520" y2="160" />
-        </g>
+            <!-- Grids -->
+            <g stroke="rgba(0,0,0,0.03)" stroke-width="1">
+              <line x1="40" y1="20" x2="520" y2="20" />
+              <line x1="40" y1="60" x2="520" y2="60" />
+              <line x1="40" y1="100" x2="520" y2="100" />
+              <line x1="40" y1="140" x2="520" y2="140" />
+              <line x1="40" y1="160" x2="520" y2="160" />
+            </g>
 
-        <!-- Y Axis -->
-        <g fill="var(--text-muted)" font-size="8" text-anchor="end" font-family="var(--font-body)">
-          <text x="32" y="24">{{ maxY }}</text>
-          <text x="32" y="64">{{ Math.round(maxY * 0.75) }}</text>
-          <text x="32" y="104">{{ Math.round(maxY * 0.5) }}</text>
-          <text x="32" y="144">{{ Math.round(maxY * 0.25) }}</text>
-          <text x="32" y="164">0</text>
-        </g>
+            <!-- Y Axis -->
+            <g fill="var(--text-muted)" font-size="8" text-anchor="end" font-family="var(--font-body)">
+              <text x="32" y="24">{{ maxY }}</text>
+              <text x="32" y="64">{{ Math.round(maxY * 0.75) }}</text>
+              <text x="32" y="104">{{ Math.round(maxY * 0.5) }}</text>
+              <text x="32" y="144">{{ Math.round(maxY * 0.25) }}</text>
+              <text x="32" y="164">0</text>
+            </g>
 
-        <!-- Render Paths -->
-        <g v-for="series in seriesMeta" :key="'paths-' + series.key" 
-           class="group transition-opacity duration-300"
-           :class="{ 'opacity-100': hoveredSymptom === null || hoveredSymptom === series.name, 'opacity-10': hoveredSymptom !== null && hoveredSymptom !== series.name }">
-          <path :d="getAreaPath(series.key)" :fill="`url(#area-${series.key})`" class="transition-all duration-1000 ease-out opacity-80 group-hover:opacity-100" />
-          <path :d="getLinePath(series.key)" fill="none" :stroke="series.color" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-md transition-all duration-1000 ease-out" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1));" />
-          <!-- Interactive hover dots -->
-          <circle v-for="(point, idx) in data" :key="'pt-'+idx" :cx="getX(idx)" :cy="getY(point[series.key] || 0)" r="4.5" :fill="series.color" stroke="#ffffff" stroke-width="2" class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-crosshair drop-shadow-sm" />
-        </g>
+            <!-- Render Paths -->
+            <g v-for="series in seriesMeta" :key="'paths-' + series.key" 
+               class="group transition-opacity duration-300"
+               :class="{ 'opacity-100': hoveredSymptom === null || hoveredSymptom === series.name, 'opacity-10': hoveredSymptom !== null && hoveredSymptom !== series.name }">
+              <path :d="getAreaPath(series.key)" :fill="`url(#area-${series.key})`" class="transition-all duration-1000 ease-out opacity-80 group-hover:opacity-100" />
+              <path :d="getLinePath(series.key)" fill="none" :stroke="series.color" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-md transition-all duration-1000 ease-out" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1));" />
+              <!-- Interactive hover dots -->
+              <circle v-for="(point, idx) in data" :key="'pt-'+idx" :cx="getX(idx)" :cy="getY(point[series.key] || 0)" r="4.5" :fill="series.color" stroke="#ffffff" stroke-width="2" class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-crosshair drop-shadow-sm" />
+            </g>
 
-        <!-- X Axis labels -->
-        <g fill="var(--text-muted)" font-size="8" text-anchor="middle" font-family="var(--font-body)">
-          <text v-for="(point, idx) in data" v-show="idx % 2 === 0" :key="idx" :x="getX(idx)" y="178">
-            {{ point.label }}
-          </text>
-        </g>
-      </svg>
+            <g fill="var(--text-muted)" font-size="8" text-anchor="middle" font-family="var(--font-body)">
+              <text v-for="(point, idx) in data" v-show="idx % 2 === 0" :key="idx" :x="getX(idx)" y="178">
+                {{ point.label }}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- 2. Donut Composition Chart -->
   <div v-else-if="type === 'donut'" class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-surface-variant flex flex-col min-h-[300px]">
     <h3 class="font-headline-sm text-lg text-on-surface font-bold mb-md">สัดส่วน 5 อันดับอาการสูงสุด</h3>
-    <div class="flex-1 flex items-center justify-center gap-lg">
+    <div class="flex-1 flex flex-col sm:flex-row items-center justify-center gap-md sm:gap-lg">
       <!-- Donut Circle SVG -->
-      <div class="relative w-36 h-36">
+      <div class="relative w-36 h-36 flex-shrink-0">
         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
           <!-- Background track -->
           <circle cx="18" cy="18" fill="transparent" r="15.9" stroke="#e0e3e5" stroke-width="4"></circle>
@@ -96,14 +99,14 @@
       </div>
 
       <!-- Donut Legend details -->
-      <div class="flex flex-col gap-2 font-data-mono text-xs">
+      <div class="grid grid-cols-2 sm:flex sm:flex-col gap-2 font-data-mono text-xs w-full sm:w-auto px-4 sm:px-0">
         <div class="flex items-center gap-2 cursor-pointer transition-opacity duration-300" 
              v-for="(slice, idx) in donutSlices" :key="idx"
              @mouseenter="hoveredSymptom = slice.name"
              @mouseleave="hoveredSymptom = null"
              :class="{ 'opacity-100': hoveredSymptom === null || hoveredSymptom === slice.name, 'opacity-40': hoveredSymptom !== null && hoveredSymptom !== slice.name }">
-          <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: slice.color }"></div>
-          <span class="text-on-surface font-medium">{{ slice.name }} ({{ slice.percent }}%)</span>
+          <div class="w-3 h-3 rounded-sm flex-shrink-0" :style="{ backgroundColor: slice.color }"></div>
+          <span class="text-on-surface font-medium truncate">{{ slice.name }} ({{ slice.percent }}%)</span>
         </div>
       </div>
     </div>
@@ -118,14 +121,16 @@
       </div>
     </div>
 
-    <div class="w-full relative flex-1 bg-surface-container-low/30 rounded-xl flex items-end justify-around border border-surface-variant pb-8 pt-12 mt-auto overflow-hidden">
-      <!-- Background grid lines -->
-      <div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-12">
-        <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
-        <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
-        <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
-        <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
-      </div>
+    <!-- Container must allow horizontal scroll if squeezed too much on tiny mobile -->
+    <div class="w-full relative flex-1 bg-surface-container-low/30 rounded-xl flex items-end justify-around border border-surface-variant pb-8 pt-12 mt-auto overflow-x-auto min-w-0">
+      <div class="flex items-end justify-around w-full min-w-[280px] h-full relative">
+        <!-- Background grid lines -->
+        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-12">
+          <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
+          <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
+          <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
+          <div class="w-full border-b border-surface-variant/40 border-dashed"></div>
+        </div>
 
       <!-- Confirmed Bar -->
       <div class="relative w-20 h-full flex flex-col justify-end items-center group cursor-pointer z-10">
@@ -193,6 +198,7 @@
         </div>
       </div>
 
+      </div> <!-- End min-w inner wrapper -->
     </div>
   </div>
 </template>
