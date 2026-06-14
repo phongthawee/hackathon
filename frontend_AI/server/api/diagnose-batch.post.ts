@@ -79,7 +79,7 @@ ${JSON.stringify(patients, null, 2)}`;
   }
 
   // 3. Invoke Gemini API
-  const modelsToTry = ['gemma-4-31b-it', 'gemini-2.0-flash'];
+  const modelsToTry = ['gemini-3.5-flash', 'gemma-4-31b-it', 'gemini-2.0-flash'];
   let response: any = null;
   let lastError: any = null;
 
@@ -125,7 +125,7 @@ ${JSON.stringify(patients, null, 2)}`;
     const parts = resData.candidates?.[0]?.content?.parts || [];
     const textPart = parts.find((p: any) => !p.thought);
     let generatedText = textPart?.text || '';
-    
+
     // Clean text: strip markdown block syntax
     generatedText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
@@ -147,7 +147,7 @@ ${JSON.stringify(patients, null, 2)}`;
 // A helper to generate realistic mockup diagnosis based on keywords
 function getMockDiagnosis(symptom: string): string {
   const s = symptom.toLowerCase();
-  
+
   if (s.includes('ไข้ปวดข้อ') || s.includes('ปวดกระดูก') || s.includes('chikungunya') || s.includes('ชิคุนกุนยา')) {
     return 'ไข้ปวดข้อยุงลาย (Chikungunya)';
   }
@@ -169,6 +169,6 @@ function getMockDiagnosis(symptom: string): string {
   if (s.includes('หืด') || s.includes('หอบ') || s.includes('หายใจลำบาก') || s.includes('asthma')) {
     return 'โรคหืดหอบ (Asthma)';
   }
-  
+
   return 'ไข้หวัดทั่วไป (Common Cold)';
 }

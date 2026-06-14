@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 4. Invoke Gemini API
-  const modelsToTry = ['gemma-4-31b-it', 'gemini-2.0-flash'];
+  const modelsToTry = ['gemini-3.5-flash', 'gemma-4-31b-it', 'gemini-2.0-flash'];
   let response: any = null;
   let lastError: any = null;
 
