@@ -55,7 +55,7 @@
         <!-- Department -->
         <select v-model="filters.department" @change="applyFilters" class="bg-background border border-surface-variant rounded-lg py-sm px-md font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary cursor-pointer text-xs">
           <option value="">แผนกการรักษา: ทั้งหมด</option>
-          <option v-for="dept in deptOptions" :key="dept" :value="dept">{{ dept }}</option>
+          <option v-for="dept in deptOptions" :key="dept.en" :value="dept.en">{{ dept.th }}</option>
         </select>
         
         <button @click="resetFilters" class="flex items-center gap-xs text-primary font-label-caps text-label-caps px-sm py-sm hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap text-xs font-bold">
@@ -238,8 +238,15 @@ const loading = ref(true);
 const selectedCase = ref(null);
 
 const deptOptions = [
-  'Psychiatry', 'Dermatology', 'Gynecology', 'Cardiology', 
-  'Pediatrics', 'Urology', 'Neurology', 'Oncology', 'Orthopedics'
+  { en: 'จิตเวช',                     th: 'จิตเวช' },
+  { en: 'ผิวหนัง',                    th: 'ผิวหนัง' },
+  { en: 'สูตินรีเวช',                th: 'สูตินรีเวช' },
+  { en: 'โรคหัวใจ',                  th: 'โรคหัวใจ' },
+  { en: 'กุมารเวช',                  th: 'กุมารเวช' },
+  { en: 'ระบบทางเดินปัสสาวะ',        th: 'ระบบทางเดินปัสสาวะ' },
+  { en: 'ระบบประสาท',                th: 'ระบบประสาท' },
+  { en: 'มะเร็งวิทยา',              th: 'มะเร็งวิทยา' },
+  { en: 'ออร์โธปิดิกส์',            th: 'ออร์โธปิดิกส์' },
 ];
 
 // Active Filters

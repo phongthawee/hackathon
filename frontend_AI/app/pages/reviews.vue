@@ -360,8 +360,15 @@ const selectedReview = ref(null);
 const viewMode = ref('grid');
 
 const deptOptions = [
-  'Psychiatry', 'Dermatology', 'Gynecology', 'Cardiology',
-  'Pediatrics', 'Urology', 'Neurology', 'Oncology', 'Orthopedics'
+  'จิตเวช',
+  'ผิวหนัง',
+  'สูตินรีเวช',
+  'โรคหัวใจ',
+  'กุมารเวช',
+  'ระบบทางเดินปัสสาวะ',
+  'ระบบประสาท',
+  'มะเร็งวิทยา',
+  'ออร์โธปิดิกส์',
 ];
 
 // Color palette for doctor avatars
