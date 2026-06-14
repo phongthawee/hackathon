@@ -58,6 +58,12 @@
           แผนที่สด
         </NuxtLink>
 
+        <!-- Outbreak Risk Map -->
+        <NuxtLink to="/outbreaks" class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant" active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5">
+          <span class="material-symbols-outlined text-[20px]">spatial_tracking</span>
+          Outbreak Risk Map
+        </NuxtLink>
+
         <!-- Case Explorer -->
         <NuxtLink
           to="/explorer"

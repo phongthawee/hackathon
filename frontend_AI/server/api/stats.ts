@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
       throw appointmentsError;
     }
 
-    const doctorIds = [...new Set((appointmentsRaw || []).map(a => a.doctor_id).filter(Boolean))] as string[];
+    const doctorIds = [...new Set(((appointmentsRaw || []) as AppointmentRaw[]).map(a => a.doctor_id).filter(Boolean))] as string[];
     let doctors: Doctor[] = [];
     if (doctorIds.length > 0) {
       const { data, error } = await supabase
@@ -222,72 +222,64 @@ export default defineEventHandler(async (event) => {
       };
     });
 
-    // 7. Calculate Time-Series Weekly Trend (90 days)
-    // We will group data by week (e.g. from March 15 to June 13, approx 13 weeks)
-    // Focus on 5 key infectious symptoms
-    const targetSymptoms = ['Flu symptoms', 'Food Poisoning', 'Dengue Fever', 'Covid-19', 'Diarrhea'];
-    const weeklyTrendMap: Record<string, Record<string, number>> = {};
+    // 7. Calculate Time-Series Yearly Trend (12 Months)
+    // Group data by Month, but to avoid visual clutter (spaghetti graph),
+    // we only track the Top 4 symptoms + 'อื่นๆ' (Others).
+    
+    // We already have `topSymptoms` calculated above (Top 5). 
+    // Let's use the top 4 from it.
+    const top4SymptomNames = topSymptoms.slice(0, 4).map(s => s.name);
+    
+    const yearlyTrendMap: Record<string, Record<string, number>> = {};
 
-    // Generate weekly bins
-    const weeks: string[] = [];
     const endDate = appointments.length
       ? new Date(Math.max(...appointments.map(a => new Date(a.date).getTime())))
       : new Date();
-    const tempDate = new Date(endDate);
-    tempDate.setDate(endDate.getDate() - 84);
-    tempDate.setHours(0, 0, 0, 0);
-    endDate.setHours(0, 0, 0, 0);
-
-    while (tempDate.getTime() <= endDate.getTime()) {
-      const dateStr = tempDate.toISOString().split('T')[0];
-      weeks.push(dateStr);
-      weeklyTrendMap[dateStr] = {
-        'Flu symptoms': 0,
-        'Food Poisoning': 0,
-        'Dengue Fever': 0,
-        'Covid-19': 0,
-        'Diarrhea': 0,
-        'Others': 0
-      };
-      tempDate.setDate(tempDate.getDate() + 7); // Increment by 1 week
+    
+    // Generate 12 monthly bins ending at the month of endDate
+    const months: string[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
+      const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months.push(monthStr);
+      yearlyTrendMap[monthStr] = {};
+      
+      // Initialize Top 4 + อื่นๆ with 0
+      top4SymptomNames.forEach(sym => {
+        yearlyTrendMap[monthStr][sym] = 0;
+      });
+      yearlyTrendMap[monthStr]['อื่นๆ'] = 0;
     }
 
+    // Populate data
     appointments.forEach(apt => {
-      const aptTime = new Date(apt.date).getTime();
-      
-      // Find the closest preceding week bin
-      let assignedWeek = weeks[0];
-      for (let i = 0; i < weeks.length; i++) {
-        if (aptTime >= new Date(weeks[i]).getTime()) {
-          assignedWeek = weeks[i];
+      const d = new Date(apt.date);
+      const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (yearlyTrendMap[monthStr]) {
+        const sym = apt.symptom || 'ไม่ระบุอาการ';
+        if (top4SymptomNames.includes(sym)) {
+          yearlyTrendMap[monthStr][sym] += 1;
         } else {
-          break;
-        }
-      }
-
-      if (weeklyTrendMap[assignedWeek]) {
-        if (targetSymptoms.includes(apt.symptom)) {
-          weeklyTrendMap[assignedWeek][apt.symptom] += 1;
-        } else {
-          weeklyTrendMap[assignedWeek]['Others'] += 1;
+          yearlyTrendMap[monthStr]['อื่นๆ'] += 1;
         }
       }
     });
 
-    const trend = Object.entries(weeklyTrendMap).map(([week, counts]) => {
-      // Simplify date label to 'MM/DD' format
-      const [year, month, day] = week.split('-');
-      const label = `${month}/${day}`;
+    const trend = months.map(month => {
+      // Short month label (e.g., 'Jan', 'Feb' + Year)
+      const [year, m] = month.split('-');
+      const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      const label = `${monthNames[parseInt(m!, 10) - 1]} ${year!.slice(2)}`;
       return {
         label,
-        ...counts
+        ...yearlyTrendMap[month]
       };
     });
 
     // Alert logic based on active case speed in the last week
     const lastWeekLimit = endDate.getTime() - (7 * 24 * 60 * 60 * 1000);
     const recentCases = appointments.filter(
-      a => new Date(a.date).getTime() >= lastWeekLimit && (a.symptom === 'Flu symptoms' || a.symptom === 'Dengue Fever')
+      a => new Date(a.date).getTime() >= lastWeekLimit && ((a.symptom || '') === 'ไข้หวัดใหญ่' || (a.symptom || '') === 'ไข้เลือดออก' || (a.symptom || '').includes('Flu') || (a.symptom || '').includes('Dengue'))
     ).length;
 
     let alertLevel = 'GREEN';

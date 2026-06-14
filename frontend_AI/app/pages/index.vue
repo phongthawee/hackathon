@@ -571,17 +571,25 @@ const barChartData = computed(() => {
     return { confirmed: 85, cancelled: 12, noshow: 4 }; // fallback defaults
   }
 
-  const confirmed = rawAppointments.value.filter(
-    (a) => a.status === "CONFIRMED" || a.status === "PENDING",
-  ).length;
+  const confirmed = rawAppointments.value.filter((a) => {
+    const s = (a.status || "").toUpperCase();
+    return (
+      s === "CONFIRMED" ||
+      s === "PENDING" ||
+      s === "ยืนยัน" ||
+      s === "รอตรวจสอบ"
+    );
+  }).length;
 
-  const cancelled = rawAppointments.value.filter(
-    (a) => a.status === "CANCELLED",
-  ).length;
+  const cancelled = rawAppointments.value.filter((a) => {
+    const s = (a.status || "").toUpperCase();
+    return s === "CANCELLED" || s === "ยกเลิก";
+  }).length;
 
-  const noshow = rawAppointments.value.filter(
-    (a) => a.status === "NO_SHOW",
-  ).length;
+  const noshow = rawAppointments.value.filter((a) => {
+    const s = (a.status || "").toUpperCase();
+    return s === "NO_SHOW" || s === "ไม่มา";
+  }).length;
 
   return { confirmed, cancelled, noshow };
 });
