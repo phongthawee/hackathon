@@ -314,15 +314,24 @@ const barChartData = computed(() => {
   }
   
   const confirmed = rawAppointments.value.filter(
-    a => a.status === 'CONFIRMED' || a.status === 'PENDING'
+    a => {
+      const s = (a.status || '').toUpperCase();
+      return s === 'CONFIRMED' || s === 'PENDING' || s === 'ยืนยัน' || s === 'รอตรวจสอบ';
+    }
   ).length;
   
   const cancelled = rawAppointments.value.filter(
-    a => a.status === 'CANCELLED'
+    a => {
+      const s = (a.status || '').toUpperCase();
+      return s === 'CANCELLED' || s === 'ยกเลิก';
+    }
   ).length;
   
   const noshow = rawAppointments.value.filter(
-    a => a.status === 'NO_SHOW'
+    a => {
+      const s = (a.status || '').toUpperCase();
+      return s === 'NO_SHOW' || s === 'ไม่มา';
+    }
   ).length;
 
   return { confirmed, cancelled, noshow };
