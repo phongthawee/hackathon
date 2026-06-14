@@ -226,7 +226,7 @@
     >
       <!-- TopNavBar -->
       <header
-        v-if="route.path !== '/map'"
+        v-if="route.path !== '/map' && route.path !== '/outbreaks'"
         class="bg-surface-bright flex justify-between items-center w-full px-lg py-md sticky top-0 z-30 border-b border-surface-variant"
       >
         <div class="flex items-center gap-md w-full lg:w-1/3">
@@ -350,7 +350,7 @@ const toastMessage = ref("");
 
 // Sidebar state controls
 const isCollapsed = ref(false);
-const isMobileOpen = ref(false);
+const isMobileOpen = useState("is-mobile-open", () => false);
 
 // Global shared state for city blinking map pins
 const activePingCity = useState("active-ping-city", () => "");

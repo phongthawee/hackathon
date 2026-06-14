@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useState } from "#app";
 import LeafletMap from "~/components/LeafletMap.vue";
 
 const router = useRouter();
+const isMobileOpen = useState("is-mobile-open", () => false);
 
 interface PatientRecord {
   patientName: string;
@@ -25,6 +27,8 @@ interface OutbreakHotspot {
 
 const hotspots = ref<OutbreakHotspot[]>([]);
 const topRisk = ref<OutbreakHotspot | null>(null);
+const showTopRiskCard = ref(true);
+const isTopRiskCollapsed = ref(false);
 const selectedHospital = ref<OutbreakHotspot | null>(null);
 const totalConfirmed = ref(0);
 const loading = ref(false);
@@ -33,6 +37,7 @@ const errorMsg = ref("");
 async function loadOutbreakData() {
   loading.value = true;
   errorMsg.value = "";
+  showTopRiskCard.value = true;
   try {
     const data = await $fetch<{
       success: boolean;
@@ -46,9 +51,11 @@ async function loadOutbreakData() {
       hotspots.value = data.hotspots;
       topRisk.value = data.topRiskLocation;
       totalConfirmed.value = data.totalConfirmedCases;
-      // Default to selected top risk location
+      // Default to selected top risk location (Desktop only)
       if (data.topRiskLocation) {
-        selectedHospital.value = data.topRiskLocation;
+        if (import.meta.client && window.innerWidth >= 1024) {
+          selectedHospital.value = data.topRiskLocation;
+        }
       }
     } else {
       errorMsg.value = data.error || "ดึงข้อมูลพิกัดความเสี่ยงไม่สำเร็จ";
@@ -168,11 +175,18 @@ onMounted(() => {
   <div
     class="flex-grow flex flex-col relative w-full h-full overflow-hidden bg-surface-dim text-on-surface font-body-md antialiased"
   >
-    <!-- Top Nav Bar -->
     <header
       class="bg-surface-bright dark:bg-inverse-surface flex justify-between items-center w-full px-lg py-md sticky top-0 z-30 shadow-sm border-b border-surface-container transition-all duration-200"
     >
       <div class="flex items-center gap-md">
+        <!-- Hamburger Menu (Mobile/Tablet) -->
+        <button
+          @click="isMobileOpen = true"
+          class="lg:hidden w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all flex-shrink-0"
+        >
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
         <h1
           class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm"
         >
@@ -246,87 +260,106 @@ onMounted(() => {
 
       <!-- FLOATING PANEL LEFT: Top Danger Location Card -->
       <div
-        v-if="topRisk"
-        class="absolute left-md top-md w-80 bg-surface-container-lowest/95 backdrop-blur-md rounded-full shadow-lg border border-outline-variant p-md z-20 animate-slide-in pointer-events-auto"
+        v-if="topRisk && showTopRiskCard"
+        :class="[
+          selectedHospital ? 'hidden lg:block' : 'block',
+          isTopRiskCollapsed
+            ? 'w-auto max-w-[280px] lg:w-72 rounded-full py-2 px-4 shadow-md'
+            : 'w-[calc(100%-2rem)] lg:w-80 rounded-[28px] p-md shadow-lg'
+        ]"
+        class="absolute bottom-md lg:bottom-auto left-md lg:left-md right-md lg:right-auto top-auto lg:top-md mx-auto lg:mx-0 bg-surface-container-lowest/95 backdrop-blur-md border border-outline-variant z-20 animate-slide-in pointer-events-auto transition-all duration-300"
       >
-        <div class="flex items-center gap-1.5 mb-sm">
-          <span class="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
-          <span
-            class="font-label-caps text-[10px] text-error font-bold uppercase tracking-wider"
-            >พื้นที่เสี่ยงสะสมสูงสุด (Top Danger Hub)</span
+        <div class="flex items-center justify-between gap-sm" :class="{ 'mb-sm': !isTopRiskCollapsed }">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
+            <span
+              class="font-label-caps text-[10px] text-error font-bold uppercase tracking-wider"
+              >พื้นที่เสี่ยงสะสมสูงสุด (Top Danger Hub)</span
+            >
+          </div>
+          <button
+            @click="isTopRiskCollapsed = !isTopRiskCollapsed"
+            class="text-on-surface-variant hover:text-on-surface text-lg font-bold leading-none shrink-0 transition-colors flex items-center justify-center w-6 h-6 rounded-full hover:bg-surface-container-high"
+            :title="isTopRiskCollapsed ? 'ขยายแผงควบคุม' : 'ย่อแผงควบคุม'"
           >
+            <span class="material-symbols-outlined text-base leading-none">
+              {{ isTopRiskCollapsed ? 'expand_more' : 'expand_less' }}
+            </span>
+          </button>
         </div>
 
-        <h3 class="font-headline-sm text-base font-bold text-on-surface mb-xs">
-          {{ topRisk.hospitalName }}
-        </h3>
-        <p
-          class="font-body-md text-[11px] text-on-surface-variant leading-normal flex items-start gap-1 mb-md"
-        >
-          <span
-            class="material-symbols-outlined text-[13px] text-secondary shrink-0"
-            >location_on</span
+        <div v-if="!isTopRiskCollapsed">
+          <h3 class="font-headline-sm text-base font-bold text-on-surface mb-xs mt-sm">
+            {{ topRisk.hospitalName }}
+          </h3>
+          <p
+            class="font-body-md text-[11px] text-on-surface-variant leading-normal flex items-start gap-1 mb-md"
           >
-          {{ topRisk.address }}
-        </p>
+            <span
+              class="material-symbols-outlined text-[13px] text-secondary shrink-0"
+              >location_on</span
+            >
+            {{ topRisk.address }}
+          </p>
 
-        <div class="grid grid-cols-2 gap-sm mb-md">
-          <div
-            class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-sm"
-          >
-            <span
-              class="font-label-caps text-[10px] text-outline block uppercase mb-xs"
-              >พิกัดแผนที่</span
-            >
-            <span class="font-data-mono text-xs text-on-surface font-bold">
-              {{ topRisk.lat.toFixed(4) }}, {{ topRisk.lng.toFixed(4) }}
-            </span>
-          </div>
-          <div
-            class="bg-error-container/40 border border-error/20 rounded-xl p-sm"
-          >
-            <span
-              class="font-label-caps text-[10px] text-error font-bold block uppercase mb-xs"
-              >เคสสะสมทั้งหมด</span
-            >
-            <span
-              class="font-data-mono text-sm text-error font-bold flex items-baseline gap-1"
-            >
-              {{ topRisk.totalCases }}
-              <span class="text-[10px] font-normal text-on-surface-variant"
-                >เคส</span
-              >
-            </span>
-          </div>
-        </div>
-
-        <!-- AI Predicted Diseases breakdown -->
-        <div>
-          <span
-            class="font-label-caps text-[10px] text-on-surface-variant block uppercase mb-sm font-bold"
-            >สถิติโรคจากการวิเคราะห์ของ AI</span
-          >
-          <div class="space-y-sm max-h-[140px] overflow-y-auto pr-1">
+          <div class="grid grid-cols-2 gap-sm mb-md">
             <div
-              v-for="[disease, count] in Object.entries(
-                topRisk.geminiAnalyses,
-              ).sort((a, b) => b[1] - a[1])"
-              :key="disease"
-              class="text-xs"
+              class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-sm"
             >
-              <div
-                class="flex justify-between font-body-md text-xs text-on-surface mb-xs"
+              <span
+                class="font-label-caps text-[10px] text-outline block uppercase mb-xs"
+                >พิกัดแผนที่</span
               >
-                <span>{{ disease }}</span>
-                <span class="font-bold text-primary font-data-mono"
-                  >{{ count }} ราย</span
+              <span class="font-data-mono text-xs text-on-surface font-bold">
+                {{ topRisk.lat.toFixed(4) }}, {{ topRisk.lng.toFixed(4) }}
+              </span>
+            </div>
+            <div
+              class="bg-error-container/40 border border-error/20 rounded-xl p-sm"
+            >
+              <span
+                class="font-label-caps text-[10px] text-error font-bold block uppercase mb-xs"
+                >เคสสะสมทั้งหมด</span
+              >
+              <span
+                class="font-data-mono text-sm text-error font-bold flex items-baseline gap-1"
+              >
+                {{ topRisk.totalCases }}
+                <span class="text-[10px] font-normal text-on-surface-variant"
+                  >เคส</span
                 >
-              </div>
-              <div class="w-full bg-surface-variant rounded-full h-1.5">
+              </span>
+            </div>
+          </div>
+
+          <!-- AI Predicted Diseases breakdown -->
+          <div>
+            <span
+              class="font-label-caps text-[10px] text-on-surface-variant block uppercase mb-sm font-bold"
+              >สถิติโรคจากการวิเคราะห์ของ AI</span
+            >
+            <div class="space-y-sm max-h-[140px] overflow-y-auto pr-1">
+              <div
+                v-for="[disease, count] in Object.entries(
+                  topRisk.geminiAnalyses,
+                ).sort((a, b) => b[1] - a[1])"
+                :key="disease"
+                class="text-xs"
+              >
                 <div
-                  class="bg-secondary h-1.5 rounded-full"
-                  :style="{ width: `${(count / topRisk.totalCases) * 100}%` }"
-                ></div>
+                  class="flex justify-between font-body-md text-xs text-on-surface mb-xs"
+                >
+                  <span>{{ disease }}</span>
+                  <span class="font-bold text-primary font-data-mono"
+                    >{{ count }} ราย</span
+                  >
+                </div>
+                <div class="w-full bg-surface-variant rounded-full h-1.5">
+                  <div
+                    class="bg-secondary h-1.5 rounded-full"
+                    :style="{ width: `${(count / topRisk.totalCases) * 100}%` }"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
@@ -336,7 +369,7 @@ onMounted(() => {
       <!-- FLOATING PANEL RIGHT: Detailed patients and recommendation panel -->
       <div
         v-if="selectedHospital"
-        class="absolute right-md top-md bottom-md w-96 bg-surface-container-lowest/95 backdrop-blur-md rounded-full shadow-lg border border-outline-variant flex flex-col z-20 animate-slide-in-right overflow-hidden pointer-events-auto"
+        class="absolute bottom-0 lg:bottom-md left-0 lg:left-auto right-0 lg:right-md top-auto lg:top-md w-full lg:w-96 h-[55vh] lg:h-[calc(100%-2rem)] bg-surface-container-lowest/95 backdrop-blur-md rounded-t-full lg:rounded-full shadow-lg border-t border-x lg:border border-outline-variant flex flex-col z-20 animate-slide-in-right overflow-hidden pointer-events-auto"
       >
         <!-- Panel Header -->
         <div
@@ -505,26 +538,26 @@ onMounted(() => {
 
       <!-- LEGEND / INFO BAR (Bottom Right) -->
       <div
-        class="absolute flex justify-end bottom-md left-md bg-surface-container-lowest rounded-lg shadow-sm border border-outline-variant p-sm z-20 flex gap-md"
+        class="absolute flex flex-wrap gap-xs lg:gap-md top-xs lg:top-auto right-xs lg:right-auto bottom-auto lg:bottom-md left-xs lg:left-md bg-surface-container-lowest/90 backdrop-blur-sm rounded-lg shadow-sm border border-outline-variant p-xs lg:p-sm z-20"
       >
         <div class="flex items-center gap-1">
-          <span class="w-3 h-3 rounded-full bg-error"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-error"></span>
           <span
-            class="font-data-mono text-[11px] text-on-surface-variant font-bold"
+            class="font-data-mono text-[10px] lg:text-[11px] text-on-surface-variant font-bold"
             >ปริมาณสูง (>= 4 เคส)</span
           >
         </div>
         <div class="flex items-center gap-1">
-          <span class="w-3 h-3 rounded-full bg-tertiary-fixed-dim"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim"></span>
           <span
-            class="font-data-mono text-[11px] text-on-surface-variant font-bold"
+            class="font-data-mono text-[10px] lg:text-[11px] text-on-surface-variant font-bold"
             >เฝ้าระวัง (>= 1 เคส)</span
           >
         </div>
         <div class="flex items-center gap-1">
-          <span class="w-3 h-3 rounded-full bg-secondary-fixed-dim"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-secondary-fixed-dim"></span>
           <span
-            class="font-data-mono text-[11px] text-on-surface-variant font-bold"
+            class="font-data-mono text-[10px] lg:text-[11px] text-on-surface-variant font-bold"
             >ระดับปกติ</span
           >
         </div>
