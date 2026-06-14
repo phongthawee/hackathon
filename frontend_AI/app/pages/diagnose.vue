@@ -289,14 +289,7 @@ onMounted(() => {
           >
             <span class="material-symbols-outlined text-lg" :class="{ 'animate-spin': loadingAppointments }">refresh</span>
           </button>
-          <button
-            v-if="appointments.length > 0"
-            @click="diagnoseAll"
-            class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-          >
-            <span class="material-symbols-outlined text-lg">clinical_aesthetics</span>
-            วิเคราะห์โรคทั้งหมด
-          </button>
+
         </div>
       </header>
 
