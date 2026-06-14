@@ -88,7 +88,7 @@
           @click="viewMode = 'grid'"
           :class="viewMode === 'grid' ? 'bg-primary text-on-primary' : 'bg-background text-on-surface-variant hover:bg-surface-container'"
           class="p-sm transition-colors"
-          title="Grid View"
+          title="มุมมองแบบตาราง"
         >
           <span class="material-symbols-outlined text-[18px]">grid_view</span>
         </button>
@@ -96,7 +96,7 @@
           @click="viewMode = 'list'"
           :class="viewMode === 'list' ? 'bg-primary text-on-primary' : 'bg-background text-on-surface-variant hover:bg-surface-container'"
           class="p-sm transition-colors"
-          title="List View"
+          title="มุมมองแบบรายการ"
         >
           <span class="material-symbols-outlined text-[18px]">list</span>
         </button>
@@ -262,7 +262,7 @@
         <!-- Drawer Header -->
         <div class="p-lg border-b border-surface-variant flex justify-between items-center bg-surface-container-low">
           <div>
-            <span class="text-[10px] font-bold text-secondary tracking-widest block mb-0.5">REVIEW DETAIL</span>
+            <span class="text-[10px] font-bold text-secondary tracking-widest block mb-0.5">รายละเอียดรีวิว</span>
             <h3 class="font-headline-sm text-base text-primary font-bold">รายละเอียดรีวิว</h3>
           </div>
           <button class="text-on-surface-variant hover:text-on-surface text-2xl font-bold" @click="closeDrawer">×</button>

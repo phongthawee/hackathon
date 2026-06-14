@@ -35,11 +35,11 @@
         <!-- Status -->
         <select v-model="filters.status" @change="applyFilters" class="bg-background border border-surface-variant rounded-lg py-sm px-md font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary cursor-pointer text-xs">
           <option value="">สถานะ: ทั้งหมด</option>
-          <option value="CONFIRMED">Confirmed (ยืนยันแล้ว)</option>
-          <option value="PENDING">Pending (รอดำเนินการ)</option>
-          <option value="COMPLETED">Completed (รักษาเสร็จแล้ว)</option>
-          <option value="CANCELLED">Cancelled (ยกเลิก)</option>
-          <option value="NO_SHOW">No-Show (เบี้ยวนัด)</option>
+          <option value="CONFIRMED">ยืนยันแล้ว</option>
+          <option value="PENDING">รอดำเนินการ</option>
+          <option value="COMPLETED">รักษาเสร็จสิ้น</option>
+          <option value="CANCELLED">ยกเลิก</option>
+          <option value="NO_SHOW">ไม่มาตามนัด</option>
         </select>
         
         <!-- Region/Location -->
@@ -114,7 +114,7 @@
               </td>
               <td class="py-md px-md font-body-md text-body-md text-on-surface-variant">{{ formatDate(item.date) }}</td>
               <td class="py-md px-md text-right">
-                <button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-surface-container-high" title="View Detail">
+                <button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-surface-container-high" title="ดูรายละเอียด">
                   <span class="material-symbols-outlined text-[20px]">visibility</span>
                 </button>
               </td>
@@ -147,7 +147,7 @@
         <!-- Drawer Header -->
         <div class="p-lg border-b border-surface-variant flex justify-between items-center bg-surface-container-low">
           <div>
-            <span class="text-[10px] font-bold text-secondary tracking-widest block mb-0.5">CASE DOSSIER</span>
+            <span class="text-[10px] font-bold text-secondary tracking-widest block mb-0.5">สรุปข้อมูลเคส</span>
             <h3 class="font-headline-sm text-base text-primary font-bold">รายละเอียดเคส: {{ selectedCase.apt_id }}</h3>
           </div>
           <button class="text-on-surface-variant hover:text-on-surface text-2xl font-bold" @click="closeDrawer">×</button>
@@ -196,21 +196,21 @@
               <!-- Step 1 -->
               <div class="relative">
                 <span class="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full bg-secondary"></span>
-                <p class="font-bold text-on-surface">สร้างนัดหมายสำเร็จ (PENDING)</p>
+                <p class="font-bold text-on-surface">สร้างนัดหมายสำเร็จ (รอดำเนินการ)</p>
                 <p class="text-[10px] text-on-surface-variant">จองคิวนัดตรวจล่วงหน้าในระบบ Health Radar</p>
               </div>
 
               <!-- Step 2 -->
               <div class="relative">
                 <span class="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full" :class="selectedCase.status !== 'PENDING' && selectedCase.status !== 'CANCELLED' ? 'bg-secondary' : 'bg-outline-variant'"></span>
-                <p class="font-bold text-on-surface">ยืนยันวันรับตรวจ (CONFIRMED)</p>
+                <p class="font-bold text-on-surface">ยืนยันวันรับตรวจ (ยืนยันแล้ว)</p>
                 <p class="text-[10px] text-on-surface-variant">จัดสรรห้องวิเคราะห์แล็บและข้อมูลบุคลากรแพทย์</p>
               </div>
 
               <!-- Step 3 (Outcome status) -->
               <div class="relative">
                 <span class="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full" :class="getTimelineOutcomeColor(selectedCase.status)"></span>
-                <p class="font-bold text-on-surface">บทสรุปบริการ: {{ selectedCase.status }}</p>
+                <p class="font-bold text-on-surface">ผลลัพธ์การรักษา: {{ getThaiStatusText(selectedCase.status) }}</p>
                 <p class="text-[10px] text-on-surface-variant">
                   {{ getStatusTimelineDesc(selectedCase.status) }}
                 </p>
