@@ -158,9 +158,7 @@ function renderMarkers() {
           </ul>
         </div>
         
-        <button id="btn-popup-${spot.city}-${index}" class="w-full text-center bg-primary text-on-primary py-1.5 px-3 rounded text-[10px] font-bold hover:opacity-90 block">
-          ดูรายละเอียดเพิ่มเติม
-        </button>
+        
       </div>
     `;
 
