@@ -284,7 +284,7 @@
             <div
               class="bg-surface-container p-sm rounded-lg text-on-surface-variant border border-surface-variant leading-relaxed"
             >
-              <strong>💡 บทสรุปวิเคราะห์โรคระบาดอัตโนมัติ:</strong> <br />
+              <strong>บทสรุปวิเคราะห์โรคระบาดอัตโนมัติ:</strong> <br />
               {{ autoSummary || "กำลังสรุปผลสถิติโรคระบาดประจำวัน..." }}
             </div>
 
@@ -295,13 +295,16 @@
               class="p-sm rounded-lg flex flex-col max-w-[85%] leading-relaxed"
               :class="
                 msg.role === 'user'
-                  ? 'bg-primary-container text-on-primary-fixed self-end border border-surface-variant'
+                  ? 'bg-primary-container text-on-primary self-end border border-surface-variant'
                   : 'bg-surface border border-surface-variant self-start'
               "
             >
-              <span class="text-[10px] font-bold text-outline mb-1">{{
-                msg.role === "user" ? "คุณหมอแนน" : "Analyst 🤖"
-              }}</span>
+              <span
+                class="text-[10px] font-bold mb-1"
+                :class="msg.role === 'user' ? 'text-primary-fixed-dim' : 'text-outline'"
+              >
+                {{ msg.role === "user" ? "คุณหมอแนน" : "Analyst 🤖" }}
+              </span>
               <p v-html="formatMarkdown(msg.text)"></p>
             </div>
 
@@ -310,13 +313,10 @@
               v-if="loadingChat"
               class="bg-surface border border-surface-variant p-sm rounded-lg self-start flex items-center gap-1.5 text-outline"
             >
-              <span>🤖 กำลังประมวลผลข้อมูล</span>
-              <span class="animate-bounce">.</span
-              ><span class="animate-bounce" style="animation-delay: 0.2s"
-                >.</span
-              ><span class="animate-bounce" style="animation-delay: 0.4s"
-                >.</span
-              >
+              <span>กำลังประมวลผลข้อมูล...</span>
+              <span class="animate-bounce">.</span>
+              <span class="animate-bounce" style="animation-delay: 0.2s">.</span>
+              <span class="animate-bounce" style="animation-delay: 0.4s">.</span>
             </div>
           </div>
 
@@ -337,7 +337,7 @@
               class="bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90"
               :disabled="loadingChat || !aiQuery.trim()"
             >
-              ส่ง ⚡
+              ส่ง 
             </button>
           </form>
         </div>

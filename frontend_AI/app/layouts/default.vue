@@ -49,19 +49,35 @@
         </NuxtLink>
 
         <!-- Live Map -->
-        <NuxtLink
+        <!-- <NuxtLink
           to="/map"
           class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
         >
           <span class="material-symbols-outlined text-[20px]">map</span>
           แผนที่สด
-        </NuxtLink>
+        </NuxtLink> -->
 
         <!-- Outbreak Risk Map -->
-        <NuxtLink to="/outbreaks" class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant" active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5">
-          <span class="material-symbols-outlined text-[20px]">spatial_tracking</span>
-          Outbreak Risk Map
+        <NuxtLink
+          to="/outbreaks"
+          class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant"
+          active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
+        >
+          <span class="material-symbols-outlined text-[20px]"
+            >spatial_tracking</span
+          >
+          แผนที่เสี่ยงระบาด
+        </NuxtLink>
+
+        <!-- Diagnose AI -->
+        <NuxtLink
+          to="/diagnose"
+          class="flex items-center gap-md px-sm py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant"
+          active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
+        >
+          <span class="material-symbols-outlined text-[20px]">psychology</span>
+          วิเคราะห์โรค AI
         </NuxtLink>
 
         <!-- Case Explorer -->
@@ -71,7 +87,7 @@
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
         >
           <span class="material-symbols-outlined text-[20px]">database</span>
-          สำรวจเคส
+          รายการเคส
         </NuxtLink>
 
         <!-- Doctor Reviews -->
@@ -119,7 +135,7 @@
     <div class="ml-64 flex-1 flex flex-col w-[calc(100%-16rem)] min-h-screen">
       <!-- TopNavBar -->
       <header
-        v-if="route.path !== '/map'"
+        v-if="route.path !== '/map' && route.path !== '/outbreaks'"
         class="bg-surface-bright flex justify-between items-center w-full px-lg py-md sticky top-0 z-30 border-b border-surface-variant"
       >
         <div class="flex items-center gap-md w-1/3">
@@ -171,7 +187,7 @@
       <!-- Main Content Area Router -->
       <main
         :class="
-          route.path === '/map'
+          route.path === '/map' || route.path === '/outbreaks'
             ? 'flex-1 bg-background flex flex-col relative overflow-hidden h-screen w-full'
             : 'p-margin pt-lg pb-xl bg-background flex-1'
         "
