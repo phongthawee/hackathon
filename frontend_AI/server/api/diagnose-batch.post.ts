@@ -2,36 +2,50 @@ import { defineEventHandler, readBody } from 'h3';
 import fs from 'fs';
 import path from 'path';
 
+interface PatientInput {
+  apt_id: string;
+  symptom: string;
+}
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const symptom = body?.symptom || '';
+  const patients = (body?.patients || []) as PatientInput[];
 
-  if (!symptom.trim()) {
+  if (patients.length === 0) {
     return {
       success: false,
-      error: 'กรุณาระบุอาการของผู้ป่วย'
+      error: 'กรุณาระบุรายชื่อและอาการของผู้ป่วยที่จะวิเคราะห์'
     };
   }
 
-  // 1. Construct the prompt for Gemini
-  const prompt = `คุณคือ "ระบบ AI คัดกรองและประเมินโรคระบาดของโรงพยาบาล" มีหน้าที่ประเมินอาการที่ได้รับและระบุชื่อโรคที่มีความเป็นไปได้มากที่สุดเพียงโรคเดียวเท่านั้น 
+  // 1. Construct prompt to enforce JSON output representing the diagnoses of all patients
+  const prompt = `คุณคือ "ระบบ AI วิเคราะห์คัดกรองและประเมินโรคระบาดของโรงพยาบาล" มีหน้าที่วิเคราะห์อาการคนไข้หลายรายในชุดเดียวกัน และระบุชื่อโรคของแต่ละคนพร้อมระบุสถานะการแพร่ระบาด
 
-### กฎการวิเคราะห์และการตอบกลับอย่างเคร่งครัด:
-1. วิเคราะห์ว่าอาการดังกล่าวตรงกับโรคใด
-2. ประเมินว่าโรคนั้น **สามารถแพร่ระบาดหรือติดต่อสู่ผู้อื่นได้หรือไม่ (Communicable/Outbreak-prone disease)** เช่น:
+### กฎการวิเคราะห์อย่างเคร่งครัด:
+1. ประเมินว่าอาการของผู้ป่วยแต่ละคนตรงกับโรคใด
+2. ประเมินว่าโรคนั้น **สามารถแพร่ระบาดหรือติดต่อสู่ผู้อื่นได้หรือไม่ (Communicable/Outbreak-prone disease)**:
    - โรคที่แพร่ระบาดได้ (Epidemic/Outbreak-prone): ไข้เลือดออก (Dengue Fever), ไข้หวัดใหญ่ (Influenza), โควิด-19 (COVID-19), โรคฉี่หนู (Leptospirosis), อาหารเป็นพิษ/ท้องร่วง (Food Poisoning/Diarrhea), ไข้ปวดข้อยุงลาย (Chikungunya), โรคมือเท้าปาก (Hand Foot Mouth Disease), ไข้มาลาเรีย (Malaria) เป็นต้น
-   - โรคที่ไม่แพร่ระบาด (Non-communicable/Non-epidemic): สิวอักเสบ (Acne Vulgaris), โรกภูมิแพ้ (Allergy), ปวดฟัน (Toothache), ปวดหลัง (Back Pain), ไข้หวัดทั่วไป (Common Cold), ออฟฟิศซินโดรม เป็นต้น
-3. การแสดงผลลัพธ์:
-   - หากเป็น **โรคที่สามารถแพร่ระบาดได้** ให้ตอบเฉพาะ: "ชื่อโรคภาษาไทย (ชื่อโรคภาษาอังกฤษ)" เช่น "ไข้เลือดออก (Dengue Fever)" หรือ "โรคฉี่หนู (Leptospirosis)"
-   - หากเป็น **โรคที่ไม่แพร่ระบาด** ให้ตอบในรูปแบบ: "ไม่ใช่โรคที่แพร่ระบาด (ชื่อโรคภาษาไทย (ชื่อโรคภาษาอังกฤษ))" เช่น "ไม่ใช่โรคที่แพร่ระบาด (สิวอักเสบ (Acne Vulgaris))" หรือ "ไม่ใช่โรคที่แพร่ระบาด (โรคภูมิแพ้ (Allergy))" หรือ "ไม่ใช่โรคที่แพร่ระบาด (ไข้หวัดทั่วไป (Common Cold))"
-4. ข้อกำหนดเสริม:
-   - ห้ามมีคำอธิบายอื่น ๆ นอกเหนือจากรูปแบบที่กำหนดไว้ด้านบน
-   - ห้ามมีคำเกริ่นนำ คำทักทาย หรือเครื่องหมายคำพูดครอบคลุมภายนอกสุด
+   - โรคที่ไม่แพร่ระบาด (Non-communicable/Non-epidemic): สิวอักเสบ (Acne Vulgaris), โรคภูมิแพ้ (Allergy), ปวดฟัน (Toothache), ปวดหลัง (Back Pain), ไข้หวัดทั่วไป (Common Cold), ออฟฟิศซินโดรม เป็นต้น
+3. การแสดงผลลัพธ์ในฟิลด์ "disease":
+   - หากเป็น **โรคที่สามารถแพร่ระบาดได้** ให้ใส่: "ชื่อโรคภาษาไทย (ชื่อโรคภาษาอังกฤษ)" เช่น "ไข้เลือดออก (Dengue Fever)" หรือ "โรคฉี่หนู (Leptospirosis)"
+   - หากเป็น **โรคที่ไม่แพร่ระบาด** ให้ใส่ในรูปแบบ: "ไม่ใช่โรคที่แพร่ระบาด (ชื่อโรคภาษาไทย (ชื่อโรคภาษาอังกฤษ))" เช่น "ไม่ใช่โรคที่แพร่ระบาด (สิวอักเสบ (Acne Vulgaris))" หรือ "ไม่ใช่โรคที่แพร่ระบาด (โรคภูมิแพ้ (Allergy))" หรือ "ไม่ใช่โรคที่แพร่ระบาด (ไข้หวัดทั่วไป (Common Cold))"
 
-อาการของผู้ป่วย: "${symptom}"
-คำสั่ง: กรุณาระบุชื่อโรคและระบุสถานะการระบาดตามกฎเกณฑ์ข้างต้นทันที`;
+### กฎการตอบกลับโครงสร้างข้อมูล:
+- ต้องตอบกลับข้อมูลในรูปแบบของ JSON Array เท่านั้น! 
+- ห้ามมีคำอธิบายอื่น ๆ นอกเหนือโครงสร้าง JSON ห้ามใส่คำทักทาย ห้ามเกริ่นนำ
+- ในกรณีที่ข้อมูลจำกัด หรือวิเคราะห์ไม่ได้ ให้ใส่คำว่า "ไม่สามารถระบุได้ (Undetermined)"
+- ผลลัพธ์ต้องตรงตามโครงสร้าง JSON รูปแบบนี้เท่านั้น:
+[
+  {
+    "apt_id": "รหัส apt_id ของนัดหมายผู้ป่วยแต่ละคนที่ให้มา",
+    "disease": "ชื่อโรคหรือสถานะที่ไม่ใช่โรคระบาดตามข้อกำหนดข้างต้น"
+  }
+]
 
-  // 2. Load Gemini API Key (Read from .env file first to get the most updated key)
+ลิสต์อาการผู้ป่วยที่ต้องการให้วิเคราะห์:
+${JSON.stringify(patients, null, 2)}`;
+
+  // 2. Load API Key (Read from .env file first to get the most updated key)
   let apiKey = '';
   try {
     const pathsToTry = [
@@ -50,14 +64,13 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (err) {
-    console.error('Error reading .env files in diagnose API:', err);
+    console.error('Error reading .env files in diagnose batch API:', err);
   }
 
   if (!apiKey) {
     apiKey = process.env.GEMINI_API_KEY || process.env.NUXT_GEMINI_API_KEY || '';
   }
 
-  // 3. Handle missing API key
   if (!apiKey) {
     return {
       success: false,
@@ -65,7 +78,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  // 4. Invoke Gemini API
+  // 3. Invoke Gemini API
   const modelsToTry = ['gemma-4-31b-it', 'gemini-2.0-flash'];
   let response: any = null;
   let lastError: any = null;
@@ -91,11 +104,11 @@ export default defineEventHandler(async (event) => {
         break;
       } else {
         const errText = await res.text();
-        console.warn(`Failed to call Gemini model ${model} in diagnose API:`, errText);
+        console.warn(`Failed to call Gemini model ${model} in diagnose batch API:`, errText);
         lastError = new Error(`Gemini API HTTP Error ${res.status}: ${errText}`);
       }
     } catch (err: any) {
-      console.warn(`Error calling model ${model} in diagnose API:`, err);
+      console.warn(`Error calling model ${model} in diagnose batch API:`, err);
       lastError = err;
     }
   }
@@ -111,21 +124,22 @@ export default defineEventHandler(async (event) => {
     const resData = await response.json();
     const parts = resData.candidates?.[0]?.content?.parts || [];
     const textPart = parts.find((p: any) => !p.thought);
-    const generatedText = textPart?.text || '';
+    let generatedText = textPart?.text || '';
+    
+    // Clean text: strip markdown block syntax
+    generatedText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-    // Clean text: strip any quotes or surrounding whitespace/newlines
-    const cleanDisease = generatedText.trim().replace(/^["']|["']$/g, '');
+    const diagnoses = JSON.parse(generatedText);
 
     return {
       success: true,
-      disease: cleanDisease || 'ไม่สามารถระบุได้ (Undetermined)',
-      isMock: false
+      diagnoses
     };
   } catch (err: any) {
-    console.error('Failed to parse Gemini response:', err);
+    console.error('Failed to parse Gemini batch response:', err);
     return {
       success: false,
-      error: `เกิดข้อผิดพลาดในการประมวลผลผลลัพธ์ของ AI: ${err.message}`
+      error: `เกิดข้อผิดพลาดในการประมวลผลคำตอบ JSON จาก AI: ${err.message}`
     };
   }
 });
@@ -133,7 +147,7 @@ export default defineEventHandler(async (event) => {
 // A helper to generate realistic mockup diagnosis based on keywords
 function getMockDiagnosis(symptom: string): string {
   const s = symptom.toLowerCase();
-
+  
   if (s.includes('ไข้ปวดข้อ') || s.includes('ปวดกระดูก') || s.includes('chikungunya') || s.includes('ชิคุนกุนยา')) {
     return 'ไข้ปวดข้อยุงลาย (Chikungunya)';
   }
@@ -155,6 +169,6 @@ function getMockDiagnosis(symptom: string): string {
   if (s.includes('หืด') || s.includes('หอบ') || s.includes('หายใจลำบาก') || s.includes('asthma')) {
     return 'โรคหืดหอบ (Asthma)';
   }
-
+  
   return 'ไข้หวัดทั่วไป (Common Cold)';
 }
