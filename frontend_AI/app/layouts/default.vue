@@ -80,7 +80,6 @@
           >
         </div>
       </div>
-      -->
 
       <!-- CTA Button for simulation pinger -->
       <button
