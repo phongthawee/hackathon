@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-const { fetchAppointments } = useAppointments()
+const { fetchAppointments, saveDiagnosis } = useAppointments()
 
 interface Appointment {
   apt_id: string
@@ -68,14 +68,29 @@ async function diagnosePatient(aptId: string, symptom: string) {
   logMessage(`[apt_id: ${aptId}] เริ่มส่งข้อมูลอาการไปให้ Gemini: "${symptom}"`, 'info')
   
   try {
-    const data = await $fetch<{ success: boolean; disease?: string; error?: string; isMock?: boolean }>('/api/diagnose', {
+    const data = await $fetch<{ success: boolean; disease?: string; error?: string; isMock?: boolean; warning?: string }>('/api/diagnose', {
       method: 'POST',
       body: { symptom }
     })
     
     if (data.success && data.disease) {
+      if (data.warning) {
+        logMessage(data.warning, 'system')
+      }
       // เก็บค่าผลลัพธ์การวินิจฉัยลงในตัวแปรหลัก (diagnosisResults)
       diagnosisResults.value[aptId] = data.disease
+      
+       // บันทึกผลการวินิจฉัยลงใน Database (ตาราง ai_diagnoses)
+      try {
+        const dbResult: any = await saveDiagnosis(aptId, data.disease)
+        if (dbResult && dbResult.skipped) {
+          logMessage(`[apt_id: ${aptId}] ข้อมูลผลวินิจฉัยนี้มีอยู่ในระบบแล้ว (ข้ามการบันทึกซ้ำ)`, 'info')
+        } else {
+          logMessage(`[apt_id: ${aptId}] บันทึกผลวินิจฉัยลง Database สำเร็จ`, 'success')
+        }
+      } catch (dbErr: any) {
+        logMessage(`[apt_id: ${aptId}] เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Database: ${dbErr.message}`, 'error')
+      }
       
       // เก็บรวบรวมข้อมูลคนไข้ที่ได้รับการวินิจฉัยแล้วลงในตัวแปรสำหรับนำไปใช้ต่อ
       const patientData = appointments.value.find(apt => apt.apt_id === aptId)
@@ -107,10 +122,124 @@ async function diagnosePatient(aptId: string, symptom: string) {
 
 async function diagnoseAll() {
   if (appointments.value.length === 0) return
-  logMessage('กำลังเริ่มต้นวิเคราะห์โรคของคนไข้ทั้งหมดพร้อมกัน...', 'system')
-  const promises = appointments.value.map(apt => diagnosePatient(apt.apt_id, apt.symptom))
-  await Promise.all(promises)
-  logMessage('วิเคราะห์คนไข้ครบทั้งหมดเป็นที่เรียบร้อย', 'system')
+  
+  const patientsToDiagnose = appointments.value.map(apt => ({
+    apt_id: apt.apt_id,
+    symptom: apt.symptom
+  }))
+
+  logMessage(`กำลังส่งวิเคราะห์ประวัติคนไข้ทั้งหมด ${patientsToDiagnose.length} รายในแบบกลุ่ม (Batch) ไปยัง Gemini...`, 'system')
+
+  // แสดง Loading ทุกคนในระหว่างดำเนินการ
+  patientsToDiagnose.forEach(p => {
+    loadingDiagnose.value[p.apt_id] = true
+  })
+
+  try {
+    const data = await $fetch<{
+      success: boolean
+      diagnoses?: { apt_id: string; disease: string }[]
+      error?: string
+    }>('/api/diagnose-batch', {
+      method: 'POST',
+      body: { patients: patientsToDiagnose }
+    })
+
+    if (data.success && data.diagnoses) {
+      if ((data as any).warning) {
+        logMessage((data as any).warning, 'system')
+      }
+      logMessage(`ได้รับผลวิเคราะห์ประวัติคนไข้จาก AI ครบถ้วนแล้ว เริ่มทำการบันทึกลงฐานข้อมูล...`, 'success')
+
+      for (const item of data.diagnoses) {
+        const aptId = item.apt_id
+        const disease = item.disease
+
+        // บันทึกผลลัพธ์ลงตัวแปรผลลัพธ์หลัก
+        diagnosisResults.value[aptId] = disease
+
+        // ทำการตรวจเช็คและบันทึกลง Database (ใน composable จะดักไม่ให้บันทึกซ้ำ)
+        try {
+          const dbResult: any = await saveDiagnosis(aptId, disease)
+          if (dbResult && dbResult.skipped) {
+            logMessage(`[apt_id: ${aptId}] ข้อมูลมีอยู่แล้ว (ข้ามการบันทึกเข้า DB)`, 'info')
+          } else {
+            logMessage(`[apt_id: ${aptId}] บันทึกผลวินิจฉัยลง Database สำเร็จ`, 'success')
+          }
+        } catch (dbErr: any) {
+          logMessage(`[apt_id: ${aptId}] บันทึกลง Database ล้มเหลว: ${dbErr.message}`, 'error')
+        }
+
+        // อัปเดตในตัวแปรสำหรับนำไปใช้ต่อ
+        const patientData = appointments.value.find(apt => apt.apt_id === aptId)
+        if (patientData) {
+          const index = diagnosedPatientsList.value.findIndex(p => p.apt_id === aptId)
+          const updatedEntry = { ...patientData, predictedDisease: disease }
+          if (index > -1) {
+            diagnosedPatientsList.value[index] = updatedEntry
+          } else {
+            diagnosedPatientsList.value.push(updatedEntry)
+          }
+        }
+      }
+
+      console.log(`%c[diagnosedPatientsList updated]`, 'color: #06B6D4; font-weight: bold;', JSON.parse(JSON.stringify(diagnosedPatientsList.value)))
+      logMessage(`วิเคราะห์โรคคนไข้และอัปเดตตัวแปร diagnosedPatientsList ครบถ้วนเป็นที่เรียบร้อย (รวม ${diagnosedPatientsList.value.length} เคส)`, 'system')
+    } else {
+      logMessage(`การวิเคราะห์แบบกลุ่มล้มเหลว: ${data.error || 'ไม่มีข้อมูลตอบกลับจาก API'}`, 'error')
+    }
+  } catch (err: any) {
+    logMessage(`เกิดข้อผิดพลาดในการดึงข้อมูลแบบกลุ่ม: ${err.message}`, 'error')
+  } finally {
+    // ปิดสถานะ Loading ทุกคน
+    patientsToDiagnose.forEach(p => {
+      loadingDiagnose.value[p.apt_id] = false
+    })
+  }
+}
+
+const editingAptId = ref<string | null>(null)
+const editDiseaseText = ref('')
+
+function startEdit(aptId: string, currentDisease: string) {
+  editingAptId.value = aptId
+  editDiseaseText.value = currentDisease
+}
+
+function cancelEdit() {
+  editingAptId.value = null
+  editDiseaseText.value = ''
+}
+
+async function saveManualEdit(aptId: string) {
+  if (!editDiseaseText.value.trim()) return
+  
+  logMessage(`[apt_id: ${aptId}] กำลังแก้ไขผลวินิจฉัยด้วยตนเองเป็น "${editDiseaseText.value}"...`, 'info')
+  try {
+    const dbResult: any = await saveDiagnosis(aptId, editDiseaseText.value)
+    diagnosisResults.value[aptId] = editDiseaseText.value
+    
+    // อัปเดตในตัวแปรสำหรับนำไปใช้ต่อ
+    const patientData = appointments.value.find(apt => apt.apt_id === aptId)
+    if (patientData) {
+      const index = diagnosedPatientsList.value.findIndex(p => p.apt_id === aptId)
+      const updatedEntry = { ...patientData, predictedDisease: editDiseaseText.value }
+      if (index > -1) {
+        diagnosedPatientsList.value[index] = updatedEntry
+      } else {
+        diagnosedPatientsList.value.push(updatedEntry)
+      }
+    }
+    
+    if (dbResult && dbResult.updated) {
+      logMessage(`[apt_id: ${aptId}] อัปเดตการแก้ไขผลวินิจฉัยลง Database สำเร็จ`, 'success')
+    } else {
+      logMessage(`[apt_id: ${aptId}] บันทึกการแก้ไขผลวินิจฉัยลง Database สำเร็จ`, 'success')
+    }
+    editingAptId.value = null
+  } catch (err: any) {
+    logMessage(`[apt_id: ${aptId}] เกิดข้อผิดพลาดในการบันทึกข้อมูล: ${err.message}`, 'error')
+  }
 }
 
 onMounted(() => {
@@ -160,14 +289,7 @@ onMounted(() => {
           >
             <span class="material-symbols-outlined text-lg" :class="{ 'animate-spin': loadingAppointments }">refresh</span>
           </button>
-          <button
-            v-if="appointments.length > 0"
-            @click="diagnoseAll"
-            class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-          >
-            <span class="material-symbols-outlined text-lg">clinical_aesthetics</span>
-            วิเคราะห์โรคทั้งหมด
-          </button>
+
         </div>
       </header>
 
@@ -237,14 +359,55 @@ onMounted(() => {
 
               <!-- ผลลัพธ์วิเคราะห์โรค / ปุ่มทำงาน -->
               <div class="border-t border-slate-800/50 pt-4 mt-auto">
-                <div v-if="diagnosisResults[apt.apt_id]" class="bg-gradient-to-r from-emerald-500/10 to-indigo-500/10 border border-emerald-500/30 rounded-xl p-3.5 animate-fadeIn">
-                  <span class="text-emerald-400 text-[10px] font-extrabold block uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">insights</span>
-                    ผลวิเคราะห์ที่มีสิทธิ์เป็นมากที่สุด
-                  </span>
-                  <p class="text-sm font-bold text-white leading-relaxed">
-                    {{ diagnosisResults[apt.apt_id] }}
-                  </p>
+                <div v-if="diagnosisResults[apt.apt_id]">
+                  <!-- โหมดแก้ไขผลการวินิจฉัย -->
+                  <div v-if="editingAptId === apt.apt_id" class="bg-slate-950/80 border border-indigo-500/30 rounded-xl p-3.5 animate-fadeIn space-y-3">
+                    <span class="text-indigo-400 text-[10px] font-extrabold block uppercase tracking-wider flex items-center gap-1">
+                      <span class="material-symbols-outlined text-sm">edit</span>
+                      แก้ไขผลวิเคราะห์โรค
+                    </span>
+                    <input 
+                      v-model="editDiseaseText" 
+                      type="text" 
+                      class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" 
+                      placeholder="ระบุโรคเพื่อแก้ไข..."
+                      @keyup.enter="saveManualEdit(apt.apt_id)"
+                    />
+                    <div class="flex justify-end gap-2">
+                      <button 
+                        @click="cancelEdit" 
+                        class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold rounded"
+                      >
+                        ยกเลิก
+                      </button>
+                      <button 
+                        @click="saveManualEdit(apt.apt_id)" 
+                        class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-semibold rounded"
+                      >
+                        บันทึก
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- โหมดแสดงผลการวินิจฉัยปกติพร้อมปุ่มแก้ไข -->
+                  <div v-else class="bg-gradient-to-r from-emerald-500/10 to-indigo-500/10 border border-emerald-500/30 rounded-xl p-3.5 animate-fadeIn flex justify-between items-start gap-2">
+                    <div class="flex-1">
+                      <span class="text-emerald-400 text-[10px] font-extrabold block uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">insights</span>
+                        ผลวิเคราะห์ที่มีสิทธิ์เป็นมากที่สุด
+                      </span>
+                      <p class="text-sm font-bold text-white leading-relaxed">
+                        {{ diagnosisResults[apt.apt_id] }}
+                      </p>
+                    </div>
+                    <button 
+                      @click="startEdit(apt.apt_id, diagnosisResults[apt.apt_id] || '')"
+                      class="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
+                      title="แก้ไขผลลัพธ์นี้"
+                    >
+                      <span class="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                  </div>
                 </div>
                 <div v-else-if="loadingDiagnose[apt.apt_id]" class="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4 flex items-center justify-center gap-3">
                   <div class="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
