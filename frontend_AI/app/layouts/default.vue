@@ -98,7 +98,7 @@
         <!-- Dashboard -->
         <NuxtLink
           to="/"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
           :title="isCollapsed ? 'แดชบอร์ด' : ''"
           exact
@@ -110,9 +110,9 @@
         </NuxtLink>
 
         <!-- Live Map -->
-        <NuxtLink
+        <!-- <NuxtLink
           to="/map"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
           :title="isCollapsed ? 'แผนที่สด' : ''"
         >
@@ -120,12 +120,12 @@
             >map</span
           >
           <span v-show="!isCollapsed" class="truncate">แผนที่สด</span>
-        </NuxtLink>
+        </NuxtLink> -->
 
         <!-- Outbreak Risk Map -->
         <NuxtLink
           to="/outbreaks"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
           :title="isCollapsed ? 'แผนที่เสี่ยงระบาด' : ''"
         >
@@ -138,7 +138,7 @@
         <!-- Diagnose AI -->
         <NuxtLink
           to="/diagnose"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
           :title="isCollapsed ? 'วิเคราะห์โรค AI' : ''"
         >
@@ -151,7 +151,7 @@
         <!-- Case Explorer -->
         <NuxtLink
           to="/explorer"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
           :title="isCollapsed ? 'รายการเคส' : ''"
         >
@@ -164,7 +164,7 @@
         <!-- Doctor Reviews -->
         <NuxtLink
           to="/reviews"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
           :title="isCollapsed ? 'รีวิวแพทย์' : ''"
         >
@@ -175,7 +175,7 @@
         </NuxtLink>
 
         <!-- Reports -->
-        <a
+        <!-- <a
           class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant cursor-not-allowed opacity-60 justify-center lg:justify-start px-2 lg:px-sm"
           href="#"
           :title="isCollapsed ? 'รายงาน' : ''"
@@ -184,11 +184,11 @@
             >description</span
           >
           <span v-show="!isCollapsed" class="truncate">รายงาน</span>
-        </a>
+        </a> -->
       </nav>
 
       <!-- Footer menu links -->
-      <div
+      <!-- <div
         class="mt-auto pt-lg border-t border-surface-container flex flex-col gap-sm"
       >
         <a
@@ -211,7 +211,7 @@
           >
           <span v-show="!isCollapsed" class="truncate">ช่วยเหลือ</span>
         </a>
-      </div>
+      </div> -->
     </aside>
 
     <!-- Right-side Workspace -->
