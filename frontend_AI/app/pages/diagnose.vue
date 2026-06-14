@@ -359,9 +359,7 @@ onMounted(() => {
         <h1
           class="font-display-lg text-display-lg text-on-surface mb-xs flex items-center gap-sm"
         >
-          <span
-            class="material-symbols-outlined text-[32px] text-primary"
-            style="font-variation-settings: &quot;FILL&quot; 1"
+          <span class="material-symbols-outlined text-[32px] text-primary"
             >psychology</span
           >
           วิเคราะห์โรคด้วย AI
@@ -569,9 +567,7 @@ onMounted(() => {
                     <span
                       class="text-on-secondary-container text-[9px] font-bold block uppercase tracking-wider mb-0.5 flex items-center gap-xs"
                     >
-                      <span
-                        class="material-symbols-outlined text-[12px]"
-                        style="font-variation-settings: &quot;FILL&quot; 1"
+                      <span class="material-symbols-outlined text-[12px]"
                         >insights</span
                       >
                       ผลวิเคราะห์โรคจาก AI
