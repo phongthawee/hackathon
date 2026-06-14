@@ -72,11 +72,11 @@
         <div v-show="!isCollapsed" class="flex flex-col overflow-hidden">
           <span
             class="font-headline-sm text-body-lg font-semibold text-on-surface truncate"
-            >Dr. Nan</span
+            >หมอแนน</span
           >
           <span
             class="font-body-md text-label-caps text-on-surface-variant truncate"
-            >Regional Epidemiologist</span
+            >นักระบาดวิทยาภูมิภาค</span
           >
         </div>
       </div>
@@ -85,12 +85,12 @@
       <button
         @click="triggerLivePing"
         class="w-full bg-primary text-on-primary py-sm rounded-lg font-label-caps text-label-caps flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-sm mb-lg px-2 lg:px-md"
-        :title="isCollapsed ? 'New Alert' : ''"
+        :title="isCollapsed ? 'แจ้งเตือนใหม่' : ''"
       >
         <span class="material-symbols-outlined text-[18px] flex-shrink-0"
           >add_alert</span
         >
-        <span v-show="!isCollapsed">New Alert</span>
+        <span v-show="!isCollapsed">แจ้งเตือนใหม่</span>
       </button>
 
       <!-- Navigation links -->
@@ -98,94 +98,120 @@
         <!-- Dashboard -->
         <NuxtLink
           to="/"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
-          :title="isCollapsed ? 'Dashboard' : ''"
+          :title="isCollapsed ? 'แดชบอร์ด' : ''"
           exact
         >
           <span class="material-symbols-outlined text-[20px] flex-shrink-0"
             >dashboard</span
           >
-          <span v-show="!isCollapsed" class="truncate">Dashboard</span>
+          <span v-show="!isCollapsed" class="truncate">แดชบอร์ด</span>
         </NuxtLink>
 
         <!-- Live Map -->
-        <NuxtLink
+        <!-- <NuxtLink
           to="/map"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
-          :title="isCollapsed ? 'Live Map' : ''"
+          :title="isCollapsed ? 'แผนที่สด' : ''"
         >
           <span class="material-symbols-outlined text-[20px] flex-shrink-0"
             >map</span
           >
-          <span v-show="!isCollapsed" class="truncate">Live Map</span>
-        </NuxtLink>
+          <span v-show="!isCollapsed" class="truncate">แผนที่สด</span>
+        </NuxtLink> -->
 
         <!-- Outbreak Risk Map -->
         <NuxtLink
           to="/outbreaks"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
-          :title="isCollapsed ? 'Outbreak Risk Map' : ''"
+          :title="isCollapsed ? 'แผนที่เสี่ยงระบาด' : ''"
         >
           <span class="material-symbols-outlined text-[20px] flex-shrink-0"
             >spatial_tracking</span
           >
-          <span v-show="!isCollapsed" class="truncate">Outbreak Risk Map</span>
+          <span v-show="!isCollapsed" class="truncate">แผนที่เสี่ยงระบาด</span>
+        </NuxtLink>
+
+        <!-- Diagnose AI -->
+        <NuxtLink
+          to="/diagnose"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
+          active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
+          :title="isCollapsed ? 'วิเคราะห์โรค AI' : ''"
+        >
+          <span class="material-symbols-outlined text-[20px] flex-shrink-0"
+            >psychology</span
+          >
+          <span v-show="!isCollapsed" class="truncate">วิเคราะห์โรค AI</span>
         </NuxtLink>
 
         <!-- Case Explorer -->
         <NuxtLink
           to="/explorer"
-          class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant justify-center lg:justify-start px-2 lg:px-sm"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
           active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
-          :title="isCollapsed ? 'Case Explorer' : ''"
+          :title="isCollapsed ? 'รายการเคส' : ''"
         >
           <span class="material-symbols-outlined text-[20px] flex-shrink-0"
             >database</span
           >
-          <span v-show="!isCollapsed" class="truncate">Case Explorer</span>
+          <span v-show="!isCollapsed" class="truncate">รายการเคส</span>
+        </NuxtLink>
+
+        <!-- Doctor Reviews -->
+        <NuxtLink
+          to="/reviews"
+          class="flex justify-start items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant px-2 lg:px-sm"
+          active-class="text-primary font-bold border-r-4 border-primary bg-primary-container/5"
+          :title="isCollapsed ? 'รีวิวแพทย์' : ''"
+        >
+          <span class="material-symbols-outlined text-[20px] flex-shrink-0"
+            >star</span
+          >
+          <span v-show="!isCollapsed" class="truncate">รีวิวแพทย์</span>
         </NuxtLink>
 
         <!-- Reports -->
-        <a
+        <!-- <a
           class="flex items-center gap-md py-sm rounded-md font-body-md text-body-md transition-colors duration-200 hover:bg-surface-variant text-on-surface-variant cursor-not-allowed opacity-60 justify-center lg:justify-start px-2 lg:px-sm"
           href="#"
-          :title="isCollapsed ? 'Reports' : ''"
+          :title="isCollapsed ? 'รายงาน' : ''"
         >
           <span class="material-symbols-outlined text-[20px] flex-shrink-0"
             >description</span
           >
-          <span v-show="!isCollapsed" class="truncate">Reports</span>
-        </a>
+          <span v-show="!isCollapsed" class="truncate">รายงาน</span>
+        </a> -->
       </nav>
 
       <!-- Footer menu links -->
-      <div
+      <!-- <div
         class="mt-auto pt-lg border-t border-surface-container flex flex-col gap-sm"
       >
         <a
           class="flex items-center gap-md py-xs rounded-md font-body-md text-body-md text-on-surface-variant hover:bg-surface-variant transition-colors justify-center lg:justify-start px-2 lg:px-sm"
           href="#"
-          :title="isCollapsed ? 'Settings' : ''"
+          :title="isCollapsed ? 'ตั้งค่า' : ''"
         >
           <span class="material-symbols-outlined text-[18px] flex-shrink-0"
             >settings</span
           >
-          <span v-show="!isCollapsed" class="truncate">Settings</span>
+          <span v-show="!isCollapsed" class="truncate">ตั้งค่า</span>
         </a>
         <a
           class="flex items-center gap-md py-xs rounded-md font-body-md text-body-md text-on-surface-variant hover:bg-surface-variant transition-colors justify-center lg:justify-start px-2 lg:px-sm"
           href="#"
-          :title="isCollapsed ? 'Support' : ''"
+          :title="isCollapsed ? 'ช่วยเหลือ' : ''"
         >
           <span class="material-symbols-outlined text-[18px] flex-shrink-0"
             >help</span
           >
-          <span v-show="!isCollapsed" class="truncate">Support</span>
+          <span v-show="!isCollapsed" class="truncate">ช่วยเหลือ</span>
         </a>
-      </div>
+      </div> -->
     </aside>
 
     <!-- Right-side Workspace -->
