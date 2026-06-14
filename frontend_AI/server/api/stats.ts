@@ -242,25 +242,29 @@ export default defineEventHandler(async (event) => {
       const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
       const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       months.push(monthStr);
-      yearlyTrendMap[monthStr] = {};
+      
+      const currentMonthRecord: Record<string, number> = {};
       
       // Initialize Top 4 + อื่นๆ with 0
       top4SymptomNames.forEach(sym => {
-        yearlyTrendMap[monthStr][sym] = 0;
+        if (sym) currentMonthRecord[sym] = 0;
       });
-      yearlyTrendMap[monthStr]['อื่นๆ'] = 0;
+      currentMonthRecord['อื่นๆ'] = 0;
+      
+      yearlyTrendMap[monthStr] = currentMonthRecord;
     }
 
     // Populate data
     appointments.forEach(apt => {
       const d = new Date(apt.date);
       const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (yearlyTrendMap[monthStr]) {
+      const record = yearlyTrendMap[monthStr];
+      if (record) {
         const sym = apt.symptom || 'ไม่ระบุอาการ';
         if (top4SymptomNames.includes(sym)) {
-          yearlyTrendMap[monthStr][sym] += 1;
+          record[sym] = (record[sym] || 0) + 1;
         } else {
-          yearlyTrendMap[monthStr]['อื่นๆ'] += 1;
+          record['อื่นๆ'] = (record['อื่นๆ'] || 0) + 1;
         }
       }
     });

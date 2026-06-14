@@ -7,7 +7,7 @@
         <p class="font-body-md text-body-md text-on-surface-variant" id="current-date">{{ formattedDate }}</p>
       </div>
       
-      <!-- AI Outbreak Banner -->
+      <!-- AI Outbreak Banner
       <div class="bg-error-container border border-error/20 rounded-lg p-sm flex items-start gap-sm max-w-lg shadow-sm">
         <span class="material-symbols-outlined text-on-error-container mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
         <div>
@@ -16,13 +16,13 @@
             {{ autoSummary || 'ตรวจพบความผิดปกติ: อาการไข้หวัดใหญ่เพิ่มขึ้น 40% ในพื้นที่เชียงใหม่' }}
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- 1. KPI Grid (5 Columns) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-md mb-xs">
       <!-- Total Cases -->
-      <div class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-surface-variant">
+      <div class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-surface-variant col-span-2 md:col-span-1">
         <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm flex items-center justify-between">
           เคสสะสมทั้งหมด
           <span class="material-symbols-outlined text-outline" style="font-size: 16px;">monitoring</span>
