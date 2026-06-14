@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch } from 'vue';
+import { onMounted, onBeforeUnmount, watch, ref } from 'vue';
 
 const props = defineProps({
   // Accept real-time hotspots calculated from backend
@@ -42,6 +42,14 @@ const emit = defineEmits(['select-city']);
 
 let mapInstance = null;
 let clusterGroup = null;
+
+const isMobile = ref(false);
+
+function checkMobile() {
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.innerWidth < 1024;
+  }
+}
 
 // ===== Region Config: พิกัดกรอบของแต่ละภาค (สำหรับ flyToBounds เท่านั้น) =====
 const regionConfig = {
@@ -165,22 +173,26 @@ function renderMarkers() {
     `;
 
     // Create marker
-    const marker = L.marker([markerLat, markerLng], { icon: customIcon })
-      .bindPopup(popupHtml, { maxWidth: 280 });
+    const marker = L.marker([markerLat, markerLng], { icon: customIcon });
+    if (!isMobile.value) {
+      marker.bindPopup(popupHtml, { maxWidth: 280 });
+    }
 
     // Click handler to open the sidebar panel in parent component
     marker.on('click', () => {
       emit('select-city', spot);
       
-      // Delay to ensure popup DOM renders, then register button click trigger
-      setTimeout(() => {
-        const btn = document.getElementById(`btn-popup-${spot.city}-${index}`);
-        if (btn) {
-          btn.addEventListener('click', () => {
-            emit('select-city', spot);
-          });
-        }
-      }, 200);
+      if (!isMobile.value) {
+        // Delay to ensure popup DOM renders, then register button click trigger
+        setTimeout(() => {
+          const btn = document.getElementById(`btn-popup-${spot.city}-${index}`);
+          if (btn) {
+            btn.addEventListener('click', () => {
+              emit('select-city', spot);
+            });
+          }
+        }, 200);
+      }
     });
 
     clusterGroup.addLayer(marker);
@@ -197,7 +209,16 @@ watch(() => props.activeRegion, (newRegion) => {
   flyToRegion(newRegion);
 });
 
+// Watch isMobile to re-render markers
+watch(isMobile, () => {
+  renderMarkers();
+});
+
 onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', checkMobile);
+    checkMobile();
+  }
   if (typeof window !== 'undefined' && window.L) {
     const L = window.L;
 
@@ -234,6 +255,9 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', checkMobile);
+  }
   if (mapInstance) {
     mapInstance.remove();
     mapInstance = null;
