@@ -3,7 +3,7 @@
     <!-- Card header -->
     <div v-if="!fullCanvas" class="flex justify-between items-center mb-md border-b border-surface-variant pb-xs">
       <div>
-        <h3 class="font-headline-sm text-lg text-on-surface font-bold">Geographical Outbreak Map</h3>
+        <h3 class="font-headline-sm text-lg text-on-surface font-bold">แผนที่การระบาดระดับภูมิศาสตร์</h3>
         <p class="text-xs text-on-surface-variant mt-0.5">แผนที่พิกัดจริง GIS แสดงระดับความรุนแรงของโรคติดต่อและพิกัดสถานพยาบาล</p>
       </div>
       <div class="flex items-center gap-xs text-[10px] font-bold text-on-surface-variant">
@@ -30,6 +30,11 @@ const props = defineProps({
   fullCanvas: {
     type: Boolean,
     default: false
+  },
+  // Region key ที่ถูกเลือกจาก parent (เช่น 'north', 'south', '')
+  activeRegion: {
+    type: String,
+    default: ''
   }
 });
 
@@ -37,6 +42,16 @@ const emit = defineEmits(['select-city']);
 
 let mapInstance = null;
 let clusterGroup = null;
+
+// ===== Region Config: พิกัดกรอบของแต่ละภาค (สำหรับ flyToBounds เท่านั้น) =====
+const regionConfig = {
+  north:     { bounds: [[12.68, 97.34], [20.46, 101.17]], zoom: 7 },
+  northeast: { bounds: [[14.06, 100.08], [18.45, 105.64]], zoom: 7 },
+  central:   { bounds: [[12.5, 98.5], [16.5, 101.8]], zoom: 8 },
+  east:      { bounds: [[12.0, 100.7], [14.4, 103.2]], zoom: 8 },
+  west:      { bounds: [[10.5, 97.5], [16.2, 100.5]], zoom: 8 },
+  south:     { bounds: [[5.6, 98.0], [12.7, 102.0]], zoom: 7 }
+};
 
 // Backup map coordinates when backend does not send coordinates
 const coordinateMap = {
@@ -46,6 +61,30 @@ const coordinateMap = {
   'Chon Buri': { lat: 13.3611, lng: 100.9847, name: 'Chon Buri Memorial Hospital' },
   'Phuket': { lat: 7.8804, lng: 98.3923, name: 'Phuket International Hospital' }
 };
+
+// ===== บินไปยังภาคที่เลือก (ไม่วาด overlay) =====
+function flyToRegion(regionKey) {
+  if (!mapInstance) return;
+
+  // ถ้าไม่มีภาคที่เลือก → zoom กลับ Thailand
+  if (!regionKey || !regionConfig[regionKey]) {
+    mapInstance.flyTo([13.736717, 100.523186], 6, {
+      duration: 1.0,
+      easeLinearity: 0.3
+    });
+    return;
+  }
+
+  const cfg = regionConfig[regionKey];
+
+  // ✈️ FlyToBounds — animate ลื่นไปยังภาคที่เลือก
+  mapInstance.flyToBounds(cfg.bounds, {
+    padding: [40, 40],
+    duration: 1.2,
+    easeLinearity: 0.25,
+    maxZoom: cfg.zoom
+  });
+}
 
 // Main function to draw markers on Leaflet
 function renderMarkers() {
@@ -153,6 +192,11 @@ watch(() => props.hotspots, () => {
   renderMarkers();
 }, { deep: true });
 
+// Watch activeRegion prop — binto ภาคที่เลือกทันทีที่เปลี่ยน
+watch(() => props.activeRegion, (newRegion) => {
+  flyToRegion(newRegion);
+});
+
 onMounted(() => {
   if (typeof window !== 'undefined' && window.L) {
     const L = window.L;
@@ -164,14 +208,28 @@ onMounted(() => {
       zoomControl: true
     });
 
-    // Load OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(mapInstance);
+    // Load Longdo Map tile layer (ใช้ key จาก env)
+    const longdoKey = (window.__NUXT__?.config?.public?.longdoKey) || '';
+    if (longdoKey) {
+      L.tileLayer(`https://ms.longdo.com/mmmap/tile.php?zoom={z}&x={x}&y={y}&key=${longdoKey}&proj=epsg3857&HD=1`, {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://map.longdo.com">Longdo Map</a>'
+      }).addTo(mapInstance);
+    } else {
+      // Fallback: OpenStreetMap ถ้าไม่มี key
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapInstance);
+    }
 
-    // Initial render
+    // Initial render markers
     renderMarkers();
+
+    // วาด region overlay ถ้ามีค่าเริ่มต้น
+    if (props.activeRegion) {
+      drawRegionOverlay(props.activeRegion);
+    }
   }
 });
 

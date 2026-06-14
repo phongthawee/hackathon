@@ -48,10 +48,10 @@
           <span class="material-symbols-outlined text-outline mr-2 text-[18px]">filter_list</span>
           <span class="font-label-caps text-label-caps text-on-surface mr-2 font-bold text-xs">กลุ่มอาการ:</span>
           <select v-model="filters.symptom" @change="applyFilters" class="bg-transparent border-none font-body-md text-xs text-primary focus:ring-0 py-1 pl-0 pr-6 cursor-pointer">
-            <option value="">ระบบทางเดินหายใจทั้งหมด</option>
-            <option value="Dengue Fever">Dengue Fever</option>
-            <option value="Flu symptoms">Influenza-like</option>
-            <option value="Food Poisoning">Gastrointestinal</option>
+            <option value="">ทุกกลุ่มอาการ</option>
+            <option value="Dengue Fever">ไข้เลือดออก</option>
+            <option value="Flu symptoms">ไข้หวัดใหญ่</option>
+            <option value="Food Poisoning">อาหารเป็นพิษ</option>
           </select>
         </div>
 
@@ -60,18 +60,23 @@
           <span class="material-symbols-outlined text-outline mr-2 text-[18px]">calendar_today</span>
           <select v-model="filters.duration" @change="applyFilters" class="bg-transparent border-none font-body-md text-xs text-primary focus:ring-0 py-1 pl-0 pr-6 cursor-pointer">
             <option value="7">7 วันที่ผ่านมา</option>
-            <option value="1">Last 24 Hours</option>
-            <option value="30">Last 30 Days</option>
+            <option value="1">24 ชั่วโมงล่าสุด</option>
+            <option value="30">30 วันที่ผ่านมา</option>
           </select>
         </div>
 
         <!-- Region Filter -->
         <div class="bg-surface-container-lowest shadow-sm rounded-lg border border-outline-variant flex items-center px-sm py-1 min-w-max">
-          <span class="material-symbols-outlined text-outline mr-2 text-[18px]">domain</span>
-          <select v-model="filters.region" @change="applyFilters" class="bg-transparent border-none font-body-md text-xs text-primary focus:ring-0 py-1 pl-0 pr-6 cursor-pointer">
-            <option value="">ทุกแผนก</option>
-            <option value="Northern Region">Northern Region</option>
-            <option value="Southern Region">Southern Region</option>
+          <span class="material-symbols-outlined text-outline mr-2 text-[18px]">travel_explore</span>
+          <span class="font-label-caps text-label-caps text-on-surface mr-2 font-bold text-xs">ภูมิภาค:</span>
+          <select v-model="filters.region" @change="onRegionChange" class="bg-transparent border-none font-body-md text-xs text-primary focus:ring-0 py-1 pl-0 pr-6 cursor-pointer">
+            <option value="">ทุกภูมิภาค</option>
+            <option value="north">ภาคเหนือ</option>
+            <option value="northeast">ภาคตะวันออกเฉียงเหนือ (อีสาน)</option>
+            <option value="central">ภาคกลาง</option>
+            <option value="east">ภาคตะวันออก</option>
+            <option value="west">ภาคตะวันตก</option>
+            <option value="south">ภาคใต้</option>
           </select>
         </div>
 
@@ -83,7 +88,11 @@
       <!-- 2. MAP VISUALIZATION LAYER (Leaflet.js GIS) - Rendered ClientOnly to avoid SSR errors -->
       <div class="absolute inset-0 z-0">
         <ClientOnly>
-          <LeafletMap :hotspots="filteredHotspots" :fullCanvas="true" @select-city="handleSelectCity" />
+          <LeafletMap
+            :hotspots="filteredHotspots"
+            :fullCanvas="true"
+            :activeRegion="filters.region"
+            @select-city="handleSelectCity" />
         </ClientOnly>
       </div>
 
@@ -100,8 +109,8 @@
                 {{ selectedCity.severity === 'high' ? 'แจ้งเตือนระดับสูง' : selectedCity.severity === 'medium' ? 'ระดับเฝ้าระวัง' : 'ระดับปกติ' }}
               </span>
             </div>
-            <h2 class="font-headline-sm text-base font-bold text-on-surface">{{ selectedCity.city }} Hub</h2>
-            <p class="text-[10px] opacity-75 mt-0.5">{{ selectedCity.city === 'Chiang Mai' ? 'Northern District Node' : selectedCity.city === 'Phuket' ? 'Southern District Node' : 'Central District Node' }}</p>
+            <h2 class="font-headline-sm text-base font-bold text-on-surface">{{ selectedCity.city === 'Chiang Mai' ? 'เชียงใหม่' : selectedCity.city === 'Phuket' ? 'ภูเก็ต' : selectedCity.city === 'Bangkok' ? 'กรุงเทพฯ' : selectedCity.city === 'Khon Kaen' ? 'ขอนแก่น' : 'ชลบุรี' }}</h2>
+            <p class="text-[10px] opacity-75 mt-0.5">{{ selectedCity.city === 'Chiang Mai' ? 'ศูนย์ภาคเหนือ' : selectedCity.city === 'Phuket' ? 'ศูนย์ภาคใต้' : 'ศูนย์ภาคกลาง' }}</p>
           </div>
           <button class="opacity-70 hover:opacity-100 font-bold text-lg text-on-surface" @click="selectedCity = null">×</button>
         </div>
@@ -216,7 +225,7 @@
             <span class="material-symbols-outlined text-error text-[16px] mt-0.5">add_circle</span>
             <div>
               <p class="font-body-md text-[13px] text-on-surface leading-snug">พบเคสไข้เลือดออกยืนยันใหม่ใน อ.แม่ริม</p>
-              <span class="font-data-mono text-[10px] text-on-surface-variant">2 mins ago • Clinic 4B</span>
+              <span class="font-data-mono text-[10px] text-on-surface-variant">2 นาทีที่แล้ว • คลินิก 4B</span>
             </div>
           </div>
 
@@ -225,7 +234,7 @@
             <span class="material-symbols-outlined text-tertiary-fixed-dim text-[16px] mt-0.5">warning</span>
             <div>
               <p class="font-body-md text-[13px] text-on-surface leading-snug">สงสัยกลุ่มก้อนการระบาดในเขตสีลม</p>
-              <span class="font-data-mono text-[10px] text-on-surface-variant">14 mins ago • SysGen</span>
+              <span class="font-data-mono text-[10px] text-on-surface-variant">14 นาทีที่แล้ว • ระบบอัตโนมัติ</span>
             </div>
           </div>
         </div>
@@ -275,6 +284,20 @@ const filters = reactive({
   region: ''
 });
 
+// แมปเมือง → ภาค (ใช้ร่วมกับ regionConfig ใน LeafletMap)
+const cityToRegion = {
+  'Chiang Mai': 'north',
+  'Khon Kaen':  'northeast',
+  'Bangkok':    'central',
+  'Chon Buri':  'east',
+  'Phuket':     'south'
+};
+
+// เมื่อเปลี่ยนภาค: applyFilters + overlay จะ trigger ผ่าน LeafletMap prop
+function onRegionChange() {
+  applyFilters();
+}
+
 // Load stats from endpoint
 async function fetchMapData() {
   try {
@@ -311,6 +334,8 @@ const filteredHotspots = computed(() => {
     result = result.filter(h => h.city.toLowerCase().includes(q));
   }
   
+
+
   return result.map(city => {
     let casesModifier = 1.0;
     
@@ -341,13 +366,6 @@ const filteredHotspots = computed(() => {
       totalCases: calculatedCases,
       severity
     };
-  }).filter(city => {
-    // Region selection filter
-    if (filters.region) {
-      if (filters.region === 'Northern Region' && city.city !== 'Chiang Mai') return false;
-      if (filters.region === 'Southern Region' && city.city !== 'Phuket') return false;
-    }
-    return true;
   });
 });
 
@@ -413,7 +431,7 @@ function applyFilters() {
 function resetFilters() {
   filters.symptom = '';
   filters.duration = '7';
-  filters.region = '';
+  filters.region = '';   // ล้างภาค → LeafletMap จะลบ overlay + zoom กลับ
   searchQuery.value = '';
   applyFilters();
 }

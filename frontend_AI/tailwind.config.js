@@ -79,14 +79,14 @@ module.exports = {
         "margin": "24px"
       },
       fontFamily: {
-        "display-lg-mobile": ["Inter"],
-        "body-md": ["Inter"],
-        "label-caps": ["Inter"],
-        "headline-sm": ["Inter"],
-        "data-mono": ["Inter"],
-        "body-lg": ["Inter"],
-        "display-lg": ["Inter"],
-        "headline-md": ["Inter"]
+        "display-lg-mobile": ["'Noto Sans Thai'", "sans-serif"],
+        "body-md": ["'Noto Sans Thai'", "sans-serif"],
+        "label-caps": ["'Noto Sans Thai'", "sans-serif"],
+        "headline-sm": ["'Noto Sans Thai'", "sans-serif"],
+        "data-mono": ["'Noto Sans Thai'", "sans-serif"],
+        "body-lg": ["'Noto Sans Thai'", "sans-serif"],
+        "display-lg": ["'Noto Sans Thai'", "sans-serif"],
+        "headline-md": ["'Noto Sans Thai'", "sans-serif"]
       },
       fontSize: {
         "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
